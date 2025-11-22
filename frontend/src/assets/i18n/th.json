@@ -1,0 +1,55 @@
+{
+  "login": {
+    "title": "เข้าสู่ระบบ",
+    "username": "ชื่อผู้ใช้งาน",
+    "password": "รหัสผ่าน",
+    "rememberMe": "จดจำฉันไว้",
+    "loginButton": "เข้าสู่ระบบ",
+    "loggingIn": "กำลังเข้าสู่ระบบ...",
+    "loginFailed": "การเข้าสู่ระบบไม่สำเร็จ",
+    "fillAllFields": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "connectionError": "เกิดข้อผิดพลาดในการเชื่อมต่อ"
+  },
+  "dashboard": {
+    "title": "แดชบอร์ด",
+    "totalTickets": "ตั๋วทั้งหมด",
+    "newTickets": "ตั๋วใหม่", 
+    "inProgress": "กำลังดำเนินการ",
+    "completed": "เสร็จสิ้น",
+    "allTicketsAtMonth": "ตั๋วทั้งหมดในเดือน",
+    "ticketSummaryByCategories": "สรุปตั๋วตามหมวดหมู่"
+  },
+  "menu": {
+    "dashboard": "แดชบอร์ด",
+    "newTicket": "ตั๋วใหม่",
+    "allTickets": "ตั๋วทั้งหมด",
+    "reports": "รายงาน",
+    "weeklyReport": "รายงานรายสัปดาห์",
+    "monthlyReport": "รายงานรายเดือน",
+    "exportTicket": "ส่งออกตั๋ว",
+    "settings": "การตั้งค่า",
+    "general": "ทั่วไป",
+    "userAccount": "บัญชีผู้ใช้",
+    "project": "โปรเจกต์",
+    "ticketCategories": "หมวดหมู่ตั๋ว"
+  },
+  "tickets": {
+    "newTicket": "ตั๋วใหม่",
+    "allTickets": "ตั๋วทั้งหมด",
+    "projectName": "ชื่อโปรเจกต์",
+    "categories": "หมวดหมู่",
+    "issue": "ปัญหา",
+    "attachment": "ไฟล์แนบ",
+    "chooseFile": "เลือกไฟล์",
+    "createTicket": "สร้างตั๋ว",
+    "search": "ค้นหา",
+    "priority": "ความสำคัญ",
+    "status": "สถานะ",
+    "pending": "รอดำเนินการ",
+    "inProgress": "กำลังดำเนินการ",
+    "hold": "หยุดชั่วคราว",
+    "resolved": "แก้ไขแล้ว",
+    "complete": "เสร็จสิ้น",
+    "cancel": "ยกเลิก"
+  }
+}

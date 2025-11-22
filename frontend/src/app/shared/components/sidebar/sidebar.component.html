@@ -1,0 +1,123 @@
+<div class="sidebar">
+  <!-- Logo Section -->
+  <div class="sidebar-header">
+    <div class="logo">
+      <i class="bi bi-headset text-primary me-2"></i>
+      <span class="logo-text">SUPPORT TICKET</span>
+    </div>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
+    <ul class="nav flex-column">
+
+      <!-- Dashboard - แสดงให้ทุก role (ไม่มี directive) -->
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <i class="bi bi-speedometer2 me-3"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+
+
+      <!-- New Ticket - ต้องมีสิทธิ์ CREATE_TICKET (1) -->
+      <li class="nav-item" *hasPermission="[permissionEnum.CREATE_TICKET]">
+        <a class="nav-link" routerLink="/tickets/new" routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: true}">
+          <i class="bi bi-plus-circle me-3"></i>
+          <span>New Ticket</span>
+        </a>
+      </li>
+
+      <!-- All Ticket - ต้องมีสิทธิ์ VIEW_OWN_TICKETS (12) หรือ VIEW_ALL_TICKETS (13) -->
+      <li class="nav-item" *hasPermission="[permissionEnum.VIEW_OWN_TICKETS, permissionEnum.VIEW_ALL_TICKETS]">
+        <a class="nav-link" routerLink="/tickets" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <i class="bi bi-list-task me-3"></i>
+          <span>All Ticket</span>
+        </a>
+      </li>
+
+      <!-- Report Menu Section - ต้องมีสิทธิ์ VIEW_OWN_TICKETS (12) หรือ VIEW_ALL_TICKETS (13) -->
+      <div class="menu-section" *hasPermission="[permissionEnum.VIEW_OWN_TICKETS, permissionEnum.VIEW_ALL_TICKETS]">
+        <div class="nav-link d-flex align-items-center justify-content-between px-3 py-3 menu-item cursor-pointer"
+          [class.active]="isReportsRouteActive()" (click)="toggleReportDropdown()">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-bar-chart-line me-3"></i>
+            <span>Report</span>
+          </div>
+          <i class="bi bi-chevron-down" [class.rotate-180]="isReportDropdownOpen"></i>
+        </div>
+
+        <div class="submenu" [class.show]="isReportDropdownOpen">
+          <a routerLink="/reports/weekly" class="nav-link px-5 py-2 text-decoration-none submenu-item"
+            routerLinkActive="active" (click)="closeAllDropdowns()">
+            <span>Weekly Report</span>
+          </a>
+          <a routerLink="/reports/monthly" class="nav-link px-5 py-2 text-decoration-none submenu-item"
+            routerLinkActive="active" (click)="closeAllDropdowns()">
+            <span>Monthly Report</span>
+          </a>
+          <a routerLink="/reports/export" class="nav-link px-5 py-2 text-decoration-none submenu-item"
+            routerLinkActive="active" (click)="closeAllDropdowns()">
+            <span>Export Ticket</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Setting Menu Section - ต้องเป็น Admin เท่านั้น -->
+      <div class="menu-section" *adminOnly>
+        <div class="nav-link d-flex align-items-center justify-content-between px-3 py-3 menu-item cursor-pointer"
+          [class.active]="isSettingsRouteActive()" (click)="toggleSettingDropdown()">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-gear me-3"></i>
+            <span>Setting</span>
+          </div>
+          <i class="bi bi-chevron-down" [class.rotate-180]="isSettingDropdownOpen"></i>
+        </div>
+
+        <div class="submenu" [class.show]="isSettingDropdownOpen">
+          <!-- General - Supporter ขึ้นไป -->
+          <a routerLink="/settings/general" class="nav-link px-5 py-2 text-decoration-none submenu-item"
+            routerLinkActive="active" (click)="closeAllDropdowns()">
+            <span>General</span>
+          </a>
+
+          <!-- User Account - ต้องมีสิทธิ์ ADD_USER (15) หรือ DEL_USER (16) - Admin เท่านั้น -->
+          <a *hasPermission="[permissionEnum.ADD_USER, permissionEnum.DEL_USER]" routerLink="/settings/user-account"
+            class="nav-link px-5 py-2 text-decoration-none submenu-item" routerLinkActive="active"
+            (click)="closeAllDropdowns()">
+            <span>User Account</span>
+          </a>
+
+          <!-- Project - ต้องมีสิทธิ์ MANAGE_PROJECT (10) - Admin เท่านั้น -->
+          <a *hasPermission="[permissionEnum.MANAGE_PROJECT]" routerLink="/settings/project"
+            class="nav-link px-5 py-2 text-decoration-none submenu-item" routerLinkActive="active"
+            (click)="closeAllDropdowns()">
+            <span>Project</span>
+          </a>
+
+          <!-- Ticket Categories - ต้องมีสิทธิ์ MANAGE_CATEGORY (17) - Admin เท่านั้น -->
+          <a *hasPermission="[permissionEnum.MANAGE_CATEGORY]" routerLink="/settings/ticket-categories"
+            class="nav-link px-5 py-2 text-decoration-none submenu-item" routerLinkActive="active"
+            (click)="closeAllDropdowns()">
+            <span>Ticket Categories</span>
+          </a>
+
+          <!-- Customers - ต้องมีสิทธิ์ MANAGE_CUSTOMER (20) - Supporter ขึ้นไป -->
+          <a *hasPermission="[permissionEnum.MANAGE_CUSTOMER]" routerLink="/settings/customers"
+            class="nav-link px-5 py-2 text-decoration-none submenu-item" routerLinkActive="active"
+            (click)="closeAllDropdowns()">
+            <span>Customers</span>
+          </a>
+
+          <!-- Customer for Project - ต้องมีสิทธิ์ MANAGE_CUSTOMER (20) และ MANAGE_PROJECT (10) - Admin เท่านั้น -->
+          <a *hasPermission="{permissions: [permissionEnum.MANAGE_CUSTOMER, permissionEnum.MANAGE_PROJECT], requireAll: true}"
+            routerLink="/settings/customer-for-project" class="nav-link px-5 py-2 text-decoration-none submenu-item"
+            routerLinkActive="active" (click)="closeAllDropdowns()">
+            <span>Customer for Project</span>
+          </a>
+        </div>
+      </div>
+    </ul>
+  </nav>
+</div>

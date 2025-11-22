@@ -1,0 +1,55 @@
+{
+  "login": {
+    "title": "Login",
+    "username": "Username", 
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "loginButton": "LOGIN",
+    "loggingIn": "Logging in...",
+    "loginFailed": "Login failed",
+    "fillAllFields": "Please fill in all required fields",
+    "connectionError": "Connection error occurred"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalTickets": "Total Tickets",
+    "newTickets": "New Tickets",
+    "inProgress": "In Progress", 
+    "completed": "Completed",
+    "allTicketsAtMonth": "All Tickets at Month",
+    "ticketSummaryByCategories": "Ticket Summary by Categories"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "newTicket": "New Ticket",
+    "allTickets": "All Tickets",
+    "reports": "Reports",
+    "weeklyReport": "Weekly Report",
+    "monthlyReport": "Monthly Report",
+    "exportTicket": "Export Ticket",
+    "settings": "Settings",
+    "general": "General",
+    "userAccount": "User Account",
+    "project": "Project", 
+    "ticketCategories": "Ticket Categories"
+  },
+  "tickets": {
+    "newTicket": "New Ticket",
+    "allTickets": "All Tickets",
+    "projectName": "Project Name",
+    "categories": "Categories",
+    "issue": "Issue",
+    "attachment": "Attachment",
+    "chooseFile": "Choose file",
+    "createTicket": "Create Ticket",
+    "search": "Search",
+    "priority": "Priority",
+    "status": "Status",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "hold": "Hold",
+    "resolved": "Resolved", 
+    "complete": "Complete",
+    "cancel": "Cancel"
+  }
+}

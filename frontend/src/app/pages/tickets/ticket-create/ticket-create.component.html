@@ -1,0 +1,494 @@
+<div class="new-ticket-page">
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a routerLink="/tickets">{{ isEditMode ? 'All Ticket' : 'New Ticket' }}</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">{{ getPageTitle() }}</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Page Title -->
+  <div class="page-header">
+    <h1 class="page-title">{{ getPageTitle() }}</h1>
+    <!-- แสดง ticket number ในโหมดแก้ไข -->
+    <div *ngIf="isEditMode && ticket_no" class="edit-ticket-info">
+      <span class="ticket-number-badge">{{ ticket_no }}</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-card" [class.ticket-created]="isTicketCreated" [class.edit-mode]="isEditMode">
+    <!-- Progress Bar -->
+    <div class="form-progress" [style.width.%]="isTicketCreated ? 100 : 0"></div>
+
+    <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" class="ticket-form" [class.success]="isTicketCreated">
+
+      <!-- Hidden Fields สำหรับเก็บ ticket_id และ ticket_no -->
+      <input type="hidden" id="ticket_id" [value]="ticketId || ''" />
+      <input type="hidden" id="ticket_no" [value]="ticket_no" />
+      <input type="hidden" id="is_edit_mode" [value]="isEditMode" />
+
+      <!-- Project Dropdown -->
+      <app-project-dropdown label="Project Name" placeholder="-- Select Project --" [required]="true"
+        [selectedProjectId]="ticketForm.get('projectId')?.value || ''" [class.is-invalid]="isFieldInvalid('projectId')"
+        (selectionChange)="onProjectChange($event)">
+      </app-project-dropdown>
+
+      <!-- Category Dropdown -->
+      <app-category-dropdown label="Categories" placeholder="-- Select Category --" [required]="true"
+        [selectedCategoryId]="ticketForm.get('categoryId')?.value || ''"
+        [class.is-invalid]="isFieldInvalid('categoryId')" (selectionChange)="onCategoryChange($event)">
+      </app-category-dropdown>
+
+      <!-- Issue Description -->
+      <div class="form-group">
+        <label class="form-label">
+          <span>Issue</span>
+          <span class="required">*</span>
+        </label>
+
+        <!-- Rich Text Editor Container -->
+        <div class="rich-text-editor-container" [class.invalid]="isFieldInvalid('issueDescription')"
+          [class.success]="isTicketCreated">
+          <!-- Rich Text Editor Toolbar -->
+          <div class="editor-toolbar">
+            <div class="toolbar-section">
+              <!-- Font formatting -->
+              <select class="font-select">
+                <option>Noto Sans Thai</option>
+                <option>Arial</option>
+                <option>Times New Roman</option>
+              </select>
+
+              <select class="size-select">
+                <option>14</option>
+                <option>12</option>
+                <option>16</option>
+                <option>18</option>
+              </select>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <!-- Image upload button -->
+              <button type="button" class="toolbar-btn" (click)="insertImage()" title="Insert Image">
+                <i class="bi bi-image"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <!-- Text formatting buttons -->
+              <button type="button" class="toolbar-btn" (click)="formatText('bold')" title="Bold">
+                <i class="bi bi-type-bold"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <button type="button" class="toolbar-btn" (click)="formatText('italic')" title="Italic">
+                <i class="bi bi-type-italic"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <button type="button" class="toolbar-btn" (click)="formatText('underline')" title="Underline">
+                <i class="bi bi-type-underline"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <!-- Alignment buttons -->
+              <button type="button" class="toolbar-btn active" (click)="formatText('justifyLeft')" title="Align Left">
+                <i class="bi bi-text-left"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <button type="button" class="toolbar-btn" (click)="formatText('justifyCenter')" title="Align Center">
+                <i class="bi bi-text-center"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <button type="button" class="toolbar-btn" (click)="formatText('justifyRight')" title="Align Right">
+                <i class="bi bi-text-right"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <button type="button" class="toolbar-btn" (click)="formatText('justifyFull')" title="Justify">
+                <i class="bi bi-justify"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <!-- List buttons -->
+              <button type="button" class="toolbar-btn" (click)="insertList(false)" title="Bullet List">
+                <i class="bi bi-list-ul"></i>
+              </button>
+
+              <button type="button" class="toolbar-btn" (click)="insertList(true)" title="Numbered List">
+                <i class="bi bi-list-ol"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-separator"></div>
+
+            <div class="toolbar-section">
+              <!-- Link button -->
+              <button type="button" class="toolbar-btn" (click)="insertLink()" title="Insert Link">
+                <i class="bi bi-link-45deg"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Rich Text Editor Content -->
+          <div class="rich-editor" [class.invalid]="isFieldInvalid('issueDescription')"
+            [class.success]="isTicketCreated" contenteditable="true" (input)="onDescriptionInput($event)"
+            placeholder="Typing for description">
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Status Display -->
+      <div *ngIf="isTicketCreated" class="ticket-status-display">
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-check-circle me-2"></i>
+          <strong *ngIf="!isEditMode">✅ Ticket {{ ticket_no }} created successfully!</strong>
+          <strong *ngIf="isEditMode">📝 Editing ticket {{ ticket_no }}</strong>
+          <br>
+          <small *ngIf="!isEditMode">You can now upload files or click Submit to finish.</small>
+          <small *ngIf="isEditMode">Make changes and click Update to save.</small>
+        </div>
+      </div>
+
+      <!-- Auto-Save Indicator -->
+      <div *ngIf="isSubmitting && !isTicketCreated && !isEditMode" class="auto-save-indicator saving">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Creating ticket...</span>
+      </div>
+
+      <div *ngIf="isTicketCreated && !isSubmitting" class="auto-save-indicator">
+        <i class="bi bi-check-circle-fill"></i>
+        <span *ngIf="!isEditMode">Ticket saved</span>
+        <span *ngIf="isEditMode">Ready to update</span>
+      </div>
+
+      <!-- ✅ UNIFIED: File Attachment Section - รวม Existing และ New Files -->
+      <div class="form-group">
+        <label class="form-label">
+          <span *ngIf="!isEditMode">Attachment</span>
+          <span *ngIf="isEditMode">Attachments</span>
+          <small class="text-muted ms-2" *ngIf="getTotalAttachmentCount() > 0">
+            ({{ getTotalAttachmentCount() }} files)
+          </small>
+        </label>
+
+        <!-- File Upload Instructions -->
+        <div class="file-upload-instructions mb-2">
+          <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            รองรับไฟล์: JPG, PNG, GIF, PDF, DOC, DOCX, XLS, XLSX, TXT (สูงสุด 10MB ต่อไฟล์, ได้ 5 ไฟล์)
+          </small>
+        </div>
+
+        <div class="file-upload-area unified-attachments" [class.has-files]="getTotalAttachmentCount() > 0"
+          [class.has-errors]="fileErrors.length > 0">
+
+          <!-- Files Container - รวมทั้ง Existing และ New Files -->
+          <div class="files-container">
+            <!-- File Upload Button -->
+            <div class="file-upload-button">
+              <label for="fileInput" class="upload-label">
+                <div class="upload-icon">
+                  <i class="bi bi-plus-circle"></i>
+                </div>
+                <span class="upload-text">Add file</span>
+              </label>
+              <!-- File Input -->
+              <input id="fileInput" type="file" multiple (change)="onFileSelect($event)" class="file-input"
+                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+            </div>
+
+            <!-- ✅ UNIFIED FILES GRID - รวม Existing และ New Files -->
+            <div class="unified-files-grid" *ngIf="getTotalAttachmentCount() > 0">
+
+              <!-- ✅ EXISTING FILES - ไฟล์ที่มีอยู่แล้ว -->
+              <div *ngFor="let attachment of existingAttachments; let i = index" class="file-item existing-file"
+                [class.deleting]="isAttachmentDeleting(attachment.attachment_id)"
+                [class.selected]="isAttachmentSelected(attachment.attachment_id)">
+
+                <!-- Loading State -->
+                <div class="attachment-loading"
+                  *ngIf="getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
+                  <div class="loading-spinner">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                  <div class="loading-text">Analyzing file...</div>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="file-preview"
+                  *ngIf="isExistingAttachmentImage(attachment) && !getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
+                  <img [src]="attachment.path" [alt]="getExistingAttachmentDisplayName(attachment)"
+                    (error)="onExistingAttachmentImageError(attachment.attachment_id)"
+                    (load)="onExistingAttachmentImageLoad(attachment.attachment_id)" loading="lazy"
+                    class="file-preview-img">
+                </div>
+
+                <!-- File Icon (Non-Image Files) -->
+                <div class="file-preview"
+                  *ngIf="!isExistingAttachmentImage(attachment) && !getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
+                  <div class="file-icon-container">
+                    <i [class]="getExistingAttachmentIcon(attachment)" class="file-icon-large"></i>
+                  </div>
+                </div>
+
+                <!-- File Info -->
+                <div class="file-info">
+                  <span class="file-name" [title]="getExistingAttachmentDisplayName(attachment)">
+                    {{ getExistingAttachmentDisplayName(attachment) }}
+                  </span>
+                  <span class="file-size" *ngIf="formatExistingAttachmentSize(attachment)">
+                    {{ formatExistingAttachmentSize(attachment) }}
+                  </span>
+                  <div class="file-type-info">
+                    <span class="file-type-badge"
+                      [ngClass]="'file-type-' + getExistingAttachmentFileInfo(attachment.attachment_id).type"
+                      [style.background-color]="getFileTypeColor(getExistingAttachmentFileInfo(attachment.attachment_id).type)">
+                      {{ getExistingAttachmentFileInfo(attachment.attachment_id).type }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Selection Checkbox -->
+                <div class="selection-checkbox" *ngIf="existingAttachments.length > 1">
+                  <input type="checkbox" [id]="'existing-' + attachment.attachment_id"
+                    [checked]="isAttachmentSelected(attachment.attachment_id)"
+                    (change)="toggleAttachmentSelection(attachment.attachment_id)">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="file-actions">
+                  <!-- Download Button -->
+                  <button type="button" class="action-btn download-btn" (click)="downloadExistingAttachment(attachment)"
+                    title="Download {{ getExistingAttachmentDisplayName(attachment) }}"
+                    [disabled]="isAttachmentDeleting(attachment.attachment_id)">
+                    <i class="bi bi-download"></i>
+                  </button>
+
+                  <!-- Remove Button -->
+                  <button type="button" class="action-btn remove-btn" (click)="removeExistingAttachment(i, attachment)"
+                    title="Remove {{ getExistingAttachmentDisplayName(attachment) }}"
+                    [disabled]="isAttachmentDeleting(attachment.attachment_id)">
+
+                    <!-- Loading state -->
+                    <span *ngIf="isAttachmentDeleting(attachment.attachment_id)"
+                      class="spinner-border spinner-border-sm"></span>
+
+                    <!-- Normal state -->
+                    <i *ngIf="!isAttachmentDeleting(attachment.attachment_id)" class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+
+                <!-- Deleting Overlay -->
+                <div class="deleting-overlay" *ngIf="isAttachmentDeleting(attachment.attachment_id)">
+                  <div class="deleting-spinner">
+                    <div class="spinner-border text-danger" role="status">
+                      <span class="visually-hidden">Deleting...</span>
+                    </div>
+                    <small class="text-danger mt-2 fw-bold">Removing file...</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ✅ NEW/SELECTED FILES - ไฟล์ที่เพิ่งเลือก -->
+              <div *ngFor="let file of selectedFiles; let i = index" class="file-item new-file"
+                [class.uploaded]="isFileUploaded(file.name)" [class.uploading]="isFileUploading(file.name)"
+                [class.error]="isFileError(file.name)">
+
+                <!-- File Preview -->
+                <div class="file-preview">
+                  <img *ngIf="isImageFile(file)" [src]="getFilePreview(file)" alt="Preview" class="file-preview-img">
+                  <div *ngIf="!isImageFile(file)" class="file-icon-container">
+                    <i class="file-icon-large" [class]="getFileIconClass(file)" [ngClass]="getFileTypeClass(file)"></i>
+                  </div>
+                </div>
+
+                <!-- File Info -->
+                <div class="file-info">
+                  <span class="file-name" [title]="file.name">{{ file.name }}</span>
+                  <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                  <div class="file-type-info">
+                    <span class="file-type-badge new"
+                      [style.background-color]="getFileTypeColor(getFileTypeFromExtension(file.name))">
+                      {{ getFileTypeFromExtension(file.name) }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Remove Button -->
+                <div class="file-actions">
+                  <button type="button" class="action-btn remove-btn" (click)="removeFile(i)" title="Remove file">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+
+                <!-- File Status Progress -->
+                <div class="upload-progress" *ngIf="isFileUploading(file.name)">
+                  <div class="progress-bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ BULK ACTIONS - สำหรับจัดการหลายไฟล์พร้อมกัน -->
+          <div class="bulk-actions" *ngIf="canShowBulkActions()">
+            <div class="bulk-actions-header">
+              <div class="bulk-selection">
+                <input type="checkbox" id="selectAllFiles"
+                  [checked]="selectedAttachmentCount === getTotalSelectableCount() && getTotalSelectableCount() > 0"
+                  [indeterminate]="selectedAttachmentCount > 0 && selectedAttachmentCount < getTotalSelectableCount()"
+                  (change)="toggleSelectAll()">
+                <label for="selectAllFiles">
+                  Select all ({{ selectedAttachmentCount }}/{{ getTotalSelectableCount() }})
+                </label>
+              </div>
+
+              <div class="bulk-action-buttons" *ngIf="hasSelectedAttachments">
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSelectedItems()"
+                  [disabled]="selectedAttachmentIds.size === 0">
+                  <i class="bi bi-trash me-1"></i>
+                  Remove Selected ({{ selectedAttachmentCount }})
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File Upload Errors -->
+        <div class="file-errors" *ngIf="fileErrors.length > 0">
+          <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>พบปัญหาไฟล์:</strong>
+            <ul class="mb-0 mt-2">
+              <li *ngFor="let error of fileErrors">{{ error }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- File Upload Success Messages -->
+        <div class="file-success" *ngIf="fileSuccessMessages.length > 0">
+          <div class="alert alert-success" role="alert" *ngFor="let message of fileSuccessMessages">
+            <i class="bi bi-check-circle me-2"></i>
+            {{ message }}
+          </div>
+        </div>
+
+        <!-- Upload Progress -->
+        <div class="upload-progress-section" *ngIf="isSubmitting && selectedFiles.length > 0">
+          <div class="progress mb-2">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
+              กำลังอัปโหลด...
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Form Validation Errors -->
+      <div *ngIf="showValidationErrors" class="validation-errors">
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>กรุณาแก้ไขข้อผิดพลาดต่อไปนี้:</strong>
+          <ul class="mb-0 mt-2">
+            <li *ngIf="validationErrors['projectId']">กรุณาเลือก Project</li>
+            <li *ngIf="validationErrors['categoryId']">กรุณาเลือก Category</li>
+            <li *ngIf="validationErrors['issueDescription']">กรุณากรอก Issue Description อย่างน้อย 10 ตัวอักษร</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Submit Button - แยกระหว่าง New และ Edit -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [class.loading]="isSubmitting" [disabled]="isSubmitting">
+
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+
+          <!-- ข้อความแยกระหว่าง New และ Edit -->
+          <span *ngIf="!isSubmitting">{{ getSubmitButtonText() }}</span>
+          <span *ngIf="isSubmitting && !isEditMode">Creating Ticket...</span>
+          <span *ngIf="isSubmitting && isEditMode">Updating Ticket...</span>
+        </button>
+
+        <!-- Cancel Button สำหรับ Edit Mode -->
+        <button *ngIf="isEditMode" type="button" class="btn btn-secondary ms-2" (click)="resetForm()"
+          [disabled]="isSubmitting">
+          Cancel
+        </button>
+
+        <!-- Submit Status -->
+        <div class="submit-status mt-2" *ngIf="isSubmitting">
+          <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>
+            <span *ngIf="!isEditMode">กำลังสร้างตั๋ว กรุณารอสักครู่...</span>
+            <span *ngIf="isEditMode">กำลังอัปเดตตั๋ว กรุณารอสักครู่...</span>
+          </small>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Custom Alert - รวมอยู่ใน component เดียวกัน -->
+  <div class="custom-alert-overlay" *ngIf="showCustomAlert" (click)="onAlertClosed()">
+    <div class="custom-alert-modal" (click)="$event.stopPropagation()">
+      <div class="alert-content">
+        <div class="alert-icon">
+          <!-- Error Icon -->
+          <div class="error-icon" *ngIf="alertType === 'error'">
+            <i class="bi bi-exclamation"></i>
+          </div>
+          <!-- Success Icon -->
+          <div class="success-icon" *ngIf="alertType === 'success'">
+            <i class="bi bi-check"></i>
+          </div>
+        </div>
+
+        <div class="alert-message" [innerHTML]="alertMessage.replace('\n', '<br>')">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-spinner">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3">กำลังโหลด...</p>
+    </div>
+  </div>
+</div>

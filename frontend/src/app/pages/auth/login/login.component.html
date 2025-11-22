@@ -1,0 +1,132 @@
+<div class="login-container">
+  <!-- Left Panel -->
+  <div class="login-left-panel">
+    <div class="login-content">
+      <div class="login-brand">
+        <h2 class="brand-title">SUPPORT TICKET</h2>
+        <p class="brand-subtitle">of KHONTAMWEB</p>
+      </div>
+
+      <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="login-form">
+        <!-- Username Field -->
+        <div class="form-group mb-3">
+          <label for="username" class="form-label">
+            {{ getLanguageText('ชื่อผู้ใช้งาน', 'Username') }} 
+            <span class="text-danger">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="username"
+            name="username"
+            class="form-control" 
+            [(ngModel)]="loginData.username"
+            [placeholder]="getLanguageText('ชื่อผู้ใช้งาน', 'Username')"
+            required
+            maxlength="50"
+            autocomplete="username">
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group mb-3">
+          <label for="password" class="form-label">
+            {{ getLanguageText('รหัสผ่าน', 'Password') }} 
+            <span class="text-danger">*</span>
+          </label>
+          <div class="password-input-group">
+            <input 
+              [type]="showPassword ? 'text' : 'password'" 
+              id="password"
+              name="password"
+              class="form-control" 
+              [(ngModel)]="loginData.password"
+              [placeholder]="getLanguageText('รหัสผ่าน', 'Password')"
+              required
+              maxlength="50"
+              autocomplete="current-password">
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="togglePassword()"
+              [attr.aria-label]="getLanguageText('แสดง/ซ่อนรหัสผ่าน', 'Show/Hide Password')">
+              <i class="bi" [class]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me -->
+        <div class="form-check mb-4">
+          <input 
+            type="checkbox" 
+            id="rememberMe"
+            name="rememberMe"
+            class="form-check-input" 
+            [(ngModel)]="loginData.rememberMe">
+          <label for="rememberMe" class="form-check-label">
+            {{ getLanguageText('จดจำฉันไว้', 'Remember me') }}
+          </label>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Login Button -->
+        <button 
+          type="submit" 
+          class="btn btn-primary btn-login w-100"
+          [disabled]="isLoading || !loginData.username || !loginData.password">
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ isLoading ? getLanguageText('กำลังเข้าสู่ระบบ...', 'Logging in...') : getLanguageText('เข้าสู่ระบบ', 'LOGIN') }}
+        </button>
+      </form>
+
+      <!-- Language Selector -->
+      <div class="language-selector mt-4">
+        <div class="dropdown">
+          <button 
+            class="btn btn-link dropdown-toggle language-btn" 
+            type="button" 
+            data-bs-toggle="dropdown" 
+            aria-expanded="false">
+            <span class="flag-emoji me-2">{{ currentLanguage === 'th' ? '🇹🇭' : '🇺🇸' }}</span>
+            {{ currentLanguage === 'th' ? 'ไทย' : 'English' }}
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <button 
+                class="dropdown-item" 
+                type="button"
+                (click)="switchLanguage('th')"
+                [class.active]="currentLanguage === 'th'">
+                <span class="flag-emoji me-2">🇹🇭</span>
+                ไทย
+              </button>
+            </li>
+            <li>
+              <button 
+                class="dropdown-item" 
+                type="button"
+                (click)="switchLanguage('en')"
+                [class.active]="currentLanguage === 'en'">
+                <span class="flag-emoji me-2">🇺🇸</span>
+                English
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="login-right-panel">
+    <div class="background-overlay">
+      <div class="support-icon">
+        <div class="icon-circle">
+          <i class="bi bi-headset"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
