@@ -1,10 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 // ✅ เพิ่ม imports ใหม่
 import { AuthService } from '../../services/auth.service';
+import { LanguageService } from '../../services/language.service';
 import { permissionEnum } from '../../models/permission.model';
 import { PERMISSION_DIRECTIVES } from '../../directives/permission.directive';
 
@@ -14,16 +16,18 @@ import { PERMISSION_DIRECTIVES } from '../../directives/permission.directive';
   imports: [
     CommonModule, 
     RouterModule,
-    ...PERMISSION_DIRECTIVES  // ✅ เพิ่ม directives
+    ...PERMISSION_DIRECTIVES
   ],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private subscriptions: Subscription[] = [];
 
-  // ✅ Inject AuthService
+  // ✅ Inject Services
   protected authService = inject(AuthService);
+  protected languageService = inject(LanguageService);
   
   // ✅ Export permissionEnum เพื่อใช้ใน template
   protected readonly permissionEnum = permissionEnum;
@@ -34,14 +38,28 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit() {
     // Auto-open appropriate dropdown based on current route
-    this.router.events
+    const routerSub = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
         this.updateDropdownState(event.urlAfterRedirects || event.url);
       });
+    
+    this.subscriptions.push(routerSub);
 
     // Set initial dropdown state
     this.updateDropdownState(this.router.url);
+
+    // Subscribe to language changes
+    const langSub = this.languageService.currentLanguage$.subscribe(lang => {
+      console.log('🌐 Sidebar language changed to:', lang);
+    });
+    
+    this.subscriptions.push(langSub);
+  }
+
+  ngOnDestroy() {
+    console.log('🧹 Sidebar cleanup');
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   /**
@@ -132,7 +150,7 @@ export class SidebarComponent implements OnInit {
       '/settings/project',
       '/settings/ticket-categories',
       '/settings/customers',
-      '/settings/customer-for-project' // NEW: เพิ่มเส้นทางใหม่
+      '/settings/customer-for-project'
     ];
     return settingsRoutes.some(route => this.router.url.startsWith(route));
   }
@@ -147,5 +165,12 @@ export class SidebarComponent implements OnInit {
       '/reports/export'
     ];
     return reportsRoutes.some(route => this.router.url.startsWith(route));
+  }
+
+  /**
+   * Get translated text
+   */
+  t(key: string): string {
+    return this.languageService.translate(key);
   }
 }

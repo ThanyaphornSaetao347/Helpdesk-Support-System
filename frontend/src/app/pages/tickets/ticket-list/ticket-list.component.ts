@@ -2,8 +2,10 @@ import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ApiService, MasterFilterCategory, MasterFilterProject, AllTicketData } from '../../../shared/services/api.service';
 import { AuthService } from '../../../shared/services/auth.service';
+import { LanguageService } from '../../../shared/services/language.service';
 import { permissionEnum, UserRole, ROLES } from '../../../shared/models/permission.model';
 import { UserWithPermissions } from '../../../shared/models/user.model';
 import { HasPermissionDirective, HasRoleDirective } from '../../../shared/directives/permission.directive';
@@ -20,8 +22,12 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
   private apiService = inject(ApiService);
   private authService = inject(AuthService);
+  private languageService = inject(LanguageService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  // Subscriptions
+  private subscriptions: Subscription[] = [];
 
   // Permission Enums
   readonly permissionEnum = permissionEnum;
@@ -49,7 +55,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
   // Pagination state
   pagination = {
     currentPage: 1,
-    perPage: 25, // ✅ เปลี่ยนจาก 10 เป็น 25 ให้ตรงกับ Backend
+    perPage: 25,
     totalRows: 0,
     totalPages: 1
   };
@@ -76,7 +82,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
   // Search timeout for debouncing
   private searchTimeout: any = null;
 
-  // Priority Options - ✅ แก้ให้ถูกต้อง: 1=Low, 2=Medium, 3=High
+  // Priority Options
   priorityOptions = [
     { value: '', label: 'All Priority' },
     { value: '3', label: 'High' },
@@ -98,6 +104,16 @@ export class TicketListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     console.log('🎫 TicketListComponent initialized');
 
+    // Subscribe to language changes
+    const langSub = this.languageService.currentLanguage$.subscribe(lang => {
+      console.log('🌍 Ticket list language changed to:', lang);
+      
+      // 🎯 Reload statuses และ filters เมื่อเปลี่ยนภาษา
+      this.loadStatuses(); // อัพเดท status labels
+      this.loadMasterFilters(); // อัพเดท categories และ projects
+    });
+    this.subscriptions.push(langSub);
+
     this.loadStatuses();
     this.loadUserData();
     this.determineViewMode();
@@ -108,9 +124,20 @@ export class TicketListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    console.log('🧹 TicketListComponent cleanup');
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
     }
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  // ===== TRANSLATION HELPER =====
+
+  /**
+   * Get translated text
+   */
+  t(key: string, params?: { [key: string]: any }): string {
+    return this.languageService.translate(key, params);
   }
 
   // ===== USER DATA & PERMISSIONS =====
@@ -153,7 +180,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
     this.canCreateTickets = this.authService.hasPermission(permissionEnum.CREATE_TICKET);
     this.canManageTickets = this.authService.canManageTickets();
 
-    console.log('🔍 Permission check results:', {
+    console.log('🔒 Permission check results:', {
       canViewAllTickets: this.canViewAllTickets,
       canViewOwnTickets: this.canViewOwnTickets,
       canCreateTickets: this.canCreateTickets,
@@ -257,13 +284,13 @@ export class TicketListComponent implements OnInit, OnDestroy {
           console.log('✅ Status cache loaded successfully');
         } else {
           console.warn('Status cache loading failed, using defaults');
-          this.statusError = 'ไม่สามารถโหลดข้อมูลสถานะได้';
+          this.statusError = this.t('tickets.statusLoadFailed');
         }
         this.isLoadingStatuses = false;
       },
       error: (error) => {
         console.error('❌ Error loading status cache:', error);
-        this.statusError = 'เกิดข้อผิดพลาดในการโหลดสถานะ';
+        this.statusError = this.t('tickets.statusLoadError');
         this.isLoadingStatuses = false;
       }
     });
@@ -271,24 +298,17 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
   private loadStatuses(): void {
     this.statuses = [
-      { id: 1, name: 'Pending' },
-      { id: 2, name: 'Open Ticket' },
-      { id: 3, name: 'In Progress' },
-      { id: 4, name: 'Resolved' },
-      { id: 5, name: 'Complete' },
-      { id: 6, name: 'Cancel' }
+      { id: 1, name: this.t('tickets.pending') },
+      { id: 2, name: this.t('tickets.openTicket') },
+      { id: 3, name: this.t('tickets.inProgress') },
+      { id: 4, name: this.t('tickets.resolved') },
+      { id: 5, name: this.t('tickets.complete') },
+      { id: 6, name: this.t('tickets.cancel') }
     ];
   }
 
   private loadTickets(page: number = 1): void {
     console.log(`=== Loading Tickets (page=${page}) ===`);
-    console.log('🎯 Current filters:', {
-      searchText: this.searchText,
-      selectedPriority: this.selectedPriority,
-      selectedStatus: this.selectedStatus,
-      selectedProject: this.selectedProject,
-      selectedCategory: this.selectedCategory
-    });
 
     this.isLoading = true;
     this.ticketsError = '';
@@ -323,14 +343,11 @@ export class TicketListComponent implements OnInit, OnDestroy {
         console.log('✅ Response from backend:', res);
 
         if (res?.success && Array.isArray(res.data)) {
-          // ✅ ใช้ข้อมูลจาก Backend โดยตรง (Backend filter แล้ว)
           const allTickets = [...res.data];
 
           this.tickets = allTickets;
           this.filteredTickets = allTickets;
 
-          // ✅ ใช้ pagination จาก Backend เสมอ
-          // Backend รู้จำนวนข้อมูลทั้งหมดที่ตรงกับ filter
           this.pagination = res.pagination ? {
             currentPage: res.pagination.currentPage || page,
             perPage: res.pagination.perPage || 25,
@@ -347,8 +364,6 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
           console.log('📦 Final tickets:', allTickets.length);
           console.log('📊 Pagination:', this.pagination);
-          console.log('📍 Total rows:', this.pagination.totalRows);
-          console.log('📄 Total pages:', this.pagination.totalPages);
         } else {
           this.tickets = [];
           this.filteredTickets = [];
@@ -360,84 +375,11 @@ export class TicketListComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('❌ Error loading tickets:', error);
-        this.ticketsError = typeof error === 'string'
-          ? error
-          : 'เกิดข้อผิดพลาดในการโหลดตั๋ว';
+        this.ticketsError = this.t('tickets.loadError');
         this.isLoading = false;
         this.noTicketsFound = true;
       }
     });
-  }
-
-  private filterTicketsLocally(tickets: AllTicketData[]): AllTicketData[] {
-    let filtered = [...tickets];
-
-    console.log('🔍 Filtering tickets locally...');
-    console.log('Before filter:', filtered.length);
-
-    // ✅ เช็คว่ามี filter อะไรบ้าง
-    const hasFilters = this.selectedPriority || this.selectedStatus ||
-      this.selectedCategory || this.selectedProject ||
-      this.searchText?.trim();
-
-    if (!hasFilters) {
-      console.log('⚠️ No filters applied, returning all tickets');
-      return filtered;
-    }
-
-    if (this.selectedPriority && this.selectedPriority.trim()) {
-      const beforeCount = filtered.length;
-      const selectedPriorityNum = Number(this.selectedPriority);
-
-      filtered = filtered.filter(ticket => {
-        const ticketPriorityNum = Number(ticket.priority_id);
-        return ticketPriorityNum === selectedPriorityNum;
-      });
-
-      console.log(`🎯 Priority filter (${this.selectedPriority}): ${filtered.length} of ${beforeCount}`);
-    }
-
-    if (this.selectedStatus && this.selectedStatus.trim()) {
-      const beforeCount = filtered.length;
-      const statusId = Number(this.selectedStatus);
-      filtered = filtered.filter(ticket => ticket.status_id === statusId);
-      console.log(`📊 Status filter (${statusId}): ${filtered.length} of ${beforeCount}`);
-    }
-
-    if (this.selectedCategory && this.selectedCategory.trim()) {
-      const beforeCount = filtered.length;
-      const categoryId = Number(this.selectedCategory);
-      filtered = filtered.filter(ticket => ticket.categories_id === categoryId);
-      console.log(`🏷️ Category filter (${categoryId}): ${filtered.length} of ${beforeCount}`);
-    }
-
-    if (this.selectedProject && this.selectedProject.trim()) {
-      const beforeCount = filtered.length;
-      const projectId = Number(this.selectedProject);
-      filtered = filtered.filter(ticket => ticket.project_id === projectId);
-      console.log(`📁 Project filter (${projectId}): ${filtered.length} of ${beforeCount}`);
-    }
-
-    if (this.searchText && this.searchText.trim()) {
-      const beforeCount = filtered.length;
-      const searchLower = this.searchText.trim().toLowerCase();
-      filtered = filtered.filter(ticket => {
-        const anyTicket = ticket as any;
-        const matchTicketNo = ticket.ticket_no?.toLowerCase().includes(searchLower) || false;
-        const matchDescription = ticket.issue_description?.toLowerCase().includes(searchLower) || false;
-        const matchProject = ticket.project_name?.toLowerCase().includes(searchLower) || false;
-        const matchCategory = ticket.categories_name?.toLowerCase().includes(searchLower) || false;
-        // ✅ ค้นหาจาก field "name" ด้วย
-        const matchUserName = anyTicket.name?.toLowerCase().includes(searchLower) || false;
-        const matchUser = ticket.user_name?.toLowerCase().includes(searchLower) || false;
-
-        return matchTicketNo || matchDescription || matchProject || matchUserName || matchUser || matchCategory;
-      });
-      console.log(`🔍 Search filter ("${searchLower}"): ${filtered.length} of ${beforeCount}`);
-    }
-
-    console.log('After all filters:', filtered.length);
-    return filtered;
   }
 
   changePage(page: number): void {
@@ -481,17 +423,6 @@ export class TicketListComponent implements OnInit, OnDestroy {
     return pages;
   }
 
-  private filterTicketsByPermission(tickets: AllTicketData[]): AllTicketData[] {
-    if (this.viewMode === 'all' && this.canViewAllTickets) {
-      return tickets;
-    } else if (this.canViewOwnTickets && this.currentUser) {
-      return tickets.filter(ticket => ticket.create_by === this.currentUser!.id);
-    } else {
-      console.warn('⚠️ User has no permission to view tickets');
-      return [];
-    }
-  }
-
   loadMasterFilters(): void {
     this.loadingFilters = true;
     this.filterError = '';
@@ -503,22 +434,27 @@ export class TicketListComponent implements OnInit, OnDestroy {
         const resData = response.data?.data;
 
         if (response.data?.code === 1 && resData) {
-          this.categories = resData.categories ?? [];
+          // 🎯 กรอง categories ตามภาษาปัจจุบัน
+          const currentLang = this.languageService.getCurrentLanguage();
+          
+          this.categories = (resData.categories ?? []).filter(
+            (cat: any) => cat.tcl_language_id === currentLang
+          );
+          
           this.projects = resData.projects ?? [];
 
-          console.log('Categories loaded:', this.categories.length);
+          console.log(`✅ Loaded ${this.categories.length} categories for language: ${currentLang}`);
+          console.log('Categories:', this.categories);
           console.log('Projects loaded:', this.projects.length);
         } else {
-          this.filterError = response.data?.message || 'ไม่สามารถโหลดข้อมูล filter ได้';
+          this.filterError = this.t('tickets.filterLoadError');
         }
 
         this.loadingFilters = false;
       },
       error: (error) => {
         console.error('Error loading master filters:', error);
-        this.filterError = typeof error === 'string'
-          ? error
-          : 'เกิดข้อผิดพลาดในการโหลดข้อมูล filter';
+        this.filterError = this.t('tickets.filterLoadError');
         this.loadingFilters = false;
       }
     });
@@ -548,85 +484,13 @@ export class TicketListComponent implements OnInit, OnDestroy {
 
   applyFilters(): void {
     console.log('🎯 Applying filters - reloading from API');
-    console.log('Current filter values:', {
-      searchText: this.searchText,
-      selectedPriority: this.selectedPriority,
-      selectedStatus: this.selectedStatus,
-      selectedProject: this.selectedProject,
-      selectedCategory: this.selectedCategory
-    });
-
     this.loadTickets(1);
-  }
-
-  onSearchInput(event: any): void {
-    this.searchText = event.target.value;
-    console.log('🔍 Search input changed:', this.searchText);
-  }
-
-  onSearchChange(): void {
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
-
-    this.searchTimeout = setTimeout(() => {
-      console.log('🔍 Search triggered (debounced):', this.searchText);
-      this.applyFilters();
-    }, 300);
   }
 
   clearSearch(): void {
     this.searchText = '';
     console.log('🧹 Search cleared');
     this.applyFilters();
-  }
-
-  onPriorityChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const newValue = target.value;
-    console.log('🎯 Priority changing from:', this.selectedPriority, 'to:', newValue);
-    this.selectedPriority = newValue;
-
-    setTimeout(() => {
-      console.log('🎯 Priority value after update:', this.selectedPriority);
-      this.applyFilters();
-    }, 0);
-  }
-
-  onStatusChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const newValue = target.value;
-    console.log('📊 Status changing from:', this.selectedStatus, 'to:', newValue);
-    this.selectedStatus = newValue;
-
-    setTimeout(() => {
-      console.log('📊 Status value after update:', this.selectedStatus);
-      this.applyFilters();
-    }, 0);
-  }
-
-  onProjectChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const newValue = target.value;
-    console.log('📁 Project changing from:', this.selectedProject, 'to:', newValue);
-    this.selectedProject = newValue;
-
-    setTimeout(() => {
-      console.log('📁 Project value after update:', this.selectedProject);
-      this.applyFilters();
-    }, 0);
-  }
-
-  onCategoryChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const newValue = target.value;
-    console.log('🏷️ Category changing from:', this.selectedCategory, 'to:', newValue);
-    this.selectedCategory = newValue;
-
-    setTimeout(() => {
-      console.log('🏷️ Category value after update:', this.selectedCategory);
-      this.applyFilters();
-    }, 0);
   }
 
   clearFilters(): void {
@@ -661,18 +525,16 @@ export class TicketListComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('❌ Export Excel failed:', err);
-        alert('เกิดข้อผิดพลาดในการ Export Excel');
+        alert(this.t('tickets.exportError'));
       }
     });
   }
 
   // ===== STATUS MANAGEMENT =====
 
-  // ✅ เพิ่ม helper function สำหรับ normalize status name
   private normalizeStatusName(statusName: string): string {
     const normalized = statusName.toLowerCase().trim();
 
-    // Map status names ที่อาจแตกต่างกัน
     const statusMap: { [key: string]: string } = {
       'created': 'Pending',
       'pending': 'Pending',
@@ -692,63 +554,52 @@ export class TicketListComponent implements OnInit, OnDestroy {
   }
 
   getStatusText(statusId: number): string {
-    // ✅ ใช้ข้อมูลจาก cache ก่อนถ้ามี
     if (this.statusCacheLoaded) {
       const cachedName = this.apiService.getCachedStatusName(statusId);
       return this.normalizeStatusName(cachedName);
     }
 
-    // ✅ Fallback ถ้า cache ยังไม่โหลด
+    // Fallback with translation
     switch (statusId) {
-      case 1: return 'Pending';
-      case 2: return 'Open Ticket';
-      case 3: return 'In Progress';
-      case 4: return 'Resolved';
-      case 5: return 'Complete';
-      case 6: return 'Cancel';
-      default: return 'Unknown';
+      case 1: return this.t('tickets.pending');
+      case 2: return this.t('tickets.openTicket');
+      case 3: return this.t('tickets.inProgress');
+      case 4: return this.t('tickets.resolved');
+      case 5: return this.t('tickets.complete');
+      case 6: return this.t('tickets.cancel');
+      default: return this.t('tickets.unknown');
     }
   }
 
   getStatusBadgeClass(statusId: number): string {
     switch (statusId) {
-      case 1: return 'badge-pending';        // Pending - สีเหลือง
-      case 2: return 'badge-in-progress';    // Open Ticket - สีฟ้าอ่อน
-      case 3: return 'badge-hold';           // In Progress - สีเทา
-      case 4: return 'badge-resolved';       // Resolved - สีเขียวอ่อน
-      case 5: return 'badge-complete';       // Complete - สีเขียวเข้ม
-      case 6: return 'badge-cancel';         // Cancel - สีแดง
+      case 1: return 'badge-pending';
+      case 2: return 'badge-in-progress';
+      case 3: return 'badge-hold';
+      case 4: return 'badge-resolved';
+      case 5: return 'badge-complete';
+      case 6: return 'badge-cancel';
       default: return 'badge-pending';
     }
   }
 
   getStatusIcon(statusId: number): string {
     switch (statusId) {
-      case 1: return 'bi-clock';                // Pending - นาฬิกา
-      case 2: return 'bi-folder2-open';         // Open Ticket - โฟลเดอร์เปิด
-      case 3: return 'bi-chat-dots';            // In Progress - ไอคอนแชท (ตามรูป)
-      case 4: return 'bi-clipboard-check';      // Resolved - คลิปบอร์ดติ๊ก
-      case 5: return 'bi-check-circle';         // Complete - วงกลมติ๊ก
-      case 6: return 'bi-x-circle';             // Cancel - วงกลมX
+      case 1: return 'bi-clock';
+      case 2: return 'bi-folder2-open';
+      case 3: return 'bi-chat-dots';
+      case 4: return 'bi-clipboard-check';
+      case 5: return 'bi-check-circle';
+      case 6: return 'bi-x-circle';
       default: return 'bi-clock';
     }
   }
 
   // ===== STYLING METHODS =====
 
-  // ✅ Helper method สำหรับแสดงชื่อผู้ใช้
   getUserDisplayName(ticket: AllTicketData): string {
-    // ลำดับความสำคัญในการแสดงชื่อ:
-    // 1. name (ชื่อจริงจาก Backend) ✅
-    // 2. user_name (ถ้ามี)
-    // 3. username (ถ้ามี)  
-    // 4. email (ถ้ามี)
-    // 5. User ID
-    // 6. Unknown User (ถ้าไม่มีข้อมูลเลย)
-
     const anyTicket = ticket as any;
 
-    // ✅ ลำดับแรก: ชื่อจาก field "name"
     if (anyTicket.name && anyTicket.name.trim()) {
       return anyTicket.name;
     }
@@ -773,37 +624,33 @@ export class TicketListComponent implements OnInit, OnDestroy {
       return anyTicket.created_by_name;
     }
 
-    // ถ้าไม่มีชื่อ แสดง User ID แทน
     if (ticket.create_by) {
       return `User #${ticket.create_by}`;
     }
 
-    return 'Unknown User';
+    return this.t('tickets.unknownUser');
   }
 
-  // ✅ แปลง priority number เป็น string (แก้ไขให้ถูกต้อง)
   getPriorityLevel(priority: any): string {
     const priorityNum = Number(priority);
     switch (priorityNum) {
-      case 3: return 'high';      // ✅ 3 = High
-      case 2: return 'medium';    // ✅ 2 = Medium
-      case 1: return 'low';       // ✅ 1 = Low
+      case 3: return 'high';
+      case 2: return 'medium';
+      case 1: return 'low';
       default: return 'medium';
     }
   }
 
-  // ✅ แปลง priority number เป็น label (แก้ไขให้ถูกต้อง)
   getPriorityLabel(priority: any): string {
     const priorityNum = Number(priority);
     switch (priorityNum) {
-      case 3: return 'High';      // ✅ 3 = High
-      case 2: return 'Medium';    // ✅ 2 = Medium
-      case 1: return 'Low';       // ✅ 1 = Low
-      default: return 'Medium';
+      case 3: return this.t('tickets.priorityHigh');
+      case 2: return this.t('tickets.priorityMedium');
+      case 1: return this.t('tickets.priorityLow');
+      default: return this.t('tickets.priorityMedium');
     }
   }
 
-  // ✅ เช็คว่า ticket เป็น High Priority หรือไม่
   isHighPriority(ticket: AllTicketData): boolean {
     const priorityNum = Number(ticket.priority_id);
     return priorityNum === 3;
@@ -822,7 +669,8 @@ export class TicketListComponent implements OnInit, OnDestroy {
   formatDate(dateString: string): string {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleDateString('th-TH', {
+      const locale = this.languageService.getCurrentLanguage() === 'th' ? 'th-TH' : 'en-US';
+      return new Date(dateString).toLocaleDateString(locale, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -869,9 +717,8 @@ export class TicketListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const confirmDelete = confirm(
-      `คุณต้องการลบตั๋ว ${ticket.ticket_no} หรือไม่?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`
-    );
+    const confirmMessage = this.t('tickets.deleteConfirm', { ticketNo: ticket.ticket_no });
+    const confirmDelete = confirm(confirmMessage);
 
     if (confirmDelete) {
       console.log('Deleting ticket:', ticket.ticket_no);
@@ -883,12 +730,12 @@ export class TicketListComponent implements OnInit, OnDestroy {
             this.loadTickets();
           } else {
             console.error('❌ Failed to delete ticket:', response.message);
-            alert('ไม่สามารถลบตั๋วได้: ' + response.message);
+            alert(this.t('tickets.deleteFailed') + ': ' + response.message);
           }
         },
         error: (error) => {
           console.error('❌ Error deleting ticket:', error);
-          alert('เกิดข้อผิดพลาดในการลบตั๋ว');
+          alert(this.t('tickets.deleteError'));
         }
       });
     }
@@ -911,12 +758,12 @@ export class TicketListComponent implements OnInit, OnDestroy {
           ticket.status_id = newStatusId;
         } else {
           console.error('❌ Failed to change ticket status:', response.message);
-          alert('ไม่สามารถเปลี่ยนสถานะตั๋วได้: ' + response.message);
+          alert(this.t('tickets.statusChangeFailed') + ': ' + response.message);
         }
       },
       error: (error) => {
         console.error('❌ Error changing ticket status:', error);
-        alert('เกิดข้อผิดพลาดในการเปลี่ยนสถานะตั๋ว');
+        alert(this.t('tickets.statusChangeError'));
       }
     });
   }
@@ -928,7 +775,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
     }
 
     console.log('Assigning ticket:', ticket.ticket_no);
-    alert('ฟีเจอร์การมอบหมายตั๋วยังไม่พร้อมใช้งาน');
+    alert(this.t('tickets.assignNotAvailable'));
   }
 
   // ===== UTILITY METHODS =====
@@ -951,6 +798,7 @@ export class TicketListComponent implements OnInit, OnDestroy {
       filteredTickets: this.filteredTickets.length,
       currentUser: this.currentUser?.id,
       viewMode: this.viewMode,
+      currentLanguage: this.languageService.getCurrentLanguage(),
       permissions: {
         canViewAll: this.canViewAllTickets,
         canViewOwn: this.canViewOwnTickets,
@@ -977,15 +825,15 @@ export class TicketListComponent implements OnInit, OnDestroy {
   // ===== VIEW MODE METHODS =====
 
   getViewModeTitle(): string {
-    return this.viewMode === 'all' ? 'All Tickets' : 'My Tickets';
+    return this.viewMode === 'all' 
+      ? this.t('tickets.allTickets') 
+      : this.t('tickets.myTickets');
   }
 
   getViewModeDescription(): string {
-    if (this.viewMode === 'all') {
-      return 'Viewing all tickets in the system';
-    } else {
-      return 'Viewing only tickets created by you';
-    }
+    return this.viewMode === 'all'
+      ? this.t('tickets.viewingAllTickets')
+      : this.t('tickets.viewingMyTickets');
   }
 
   canSwitchViewMode(): boolean {

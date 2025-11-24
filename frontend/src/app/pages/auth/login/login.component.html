@@ -7,11 +7,11 @@
         <p class="brand-subtitle">of KHONTAMWEB</p>
       </div>
 
-      <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="login-form">
+      <form (ngSubmit)="onLogin()" #loginForm="ngForm" class="login-form" (keydown)="onKeyDown($event)">
         <!-- Username Field -->
         <div class="form-group mb-3">
           <label for="username" class="form-label">
-            {{ getLanguageText('ชื่อผู้ใช้งาน', 'Username') }} 
+            {{ translate('login.username') }} 
             <span class="text-danger">*</span>
           </label>
           <input 
@@ -20,16 +20,19 @@
             name="username"
             class="form-control" 
             [(ngModel)]="loginData.username"
-            [placeholder]="getLanguageText('ชื่อผู้ใช้งาน', 'Username')"
+            [placeholder]="translate('login.username')"
+            [attr.aria-label]="translate('login.username')"
+            [attr.aria-describedby]="getErrorAriaDescribedBy()"
             required
             maxlength="50"
-            autocomplete="username">
+            autocomplete="username"
+            [disabled]="isLoading">
         </div>
 
         <!-- Password Field -->
         <div class="form-group mb-3">
           <label for="password" class="form-label">
-            {{ getLanguageText('รหัสผ่าน', 'Password') }} 
+            {{ translate('login.password') }} 
             <span class="text-danger">*</span>
           </label>
           <div class="password-input-group">
@@ -39,15 +42,20 @@
               name="password"
               class="form-control" 
               [(ngModel)]="loginData.password"
-              [placeholder]="getLanguageText('รหัสผ่าน', 'Password')"
+              [placeholder]="translate('login.password')"
+              [attr.aria-label]="translate('login.password')"
+              [attr.aria-describedby]="getErrorAriaDescribedBy()"
               required
               maxlength="50"
-              autocomplete="current-password">
+              autocomplete="current-password"
+              [disabled]="isLoading">
             <button 
               type="button" 
               class="password-toggle"
               (click)="togglePassword()"
-              [attr.aria-label]="getLanguageText('แสดง/ซ่อนรหัสผ่าน', 'Show/Hide Password')">
+              [attr.aria-label]="getPasswordToggleAriaLabel()"
+              [disabled]="isLoading"
+              tabindex="0">
               <i class="bi" [class]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
             </button>
           </div>
@@ -60,14 +68,21 @@
             id="rememberMe"
             name="rememberMe"
             class="form-check-input" 
-            [(ngModel)]="loginData.rememberMe">
+            [(ngModel)]="loginData.rememberMe"
+            [disabled]="isLoading">
           <label for="rememberMe" class="form-check-label">
-            {{ getLanguageText('จดจำฉันไว้', 'Remember me') }}
+            {{ translate('login.rememberMe') }}
           </label>
         </div>
 
         <!-- Error Message -->
-        <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+        <div 
+          *ngIf="errorMessage" 
+          id="login-error"
+          class="alert alert-danger" 
+          role="alert"
+          [attr.aria-live]="'assertive'">
+          <i class="bi bi-exclamation-circle me-2"></i>
           {{ errorMessage }}
         </div>
 
@@ -75,46 +90,40 @@
         <button 
           type="submit" 
           class="btn btn-primary btn-login w-100"
-          [disabled]="isLoading || !loginData.username || !loginData.password">
-          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          {{ isLoading ? getLanguageText('กำลังเข้าสู่ระบบ...', 'Logging in...') : getLanguageText('เข้าสู่ระบบ', 'LOGIN') }}
+          [disabled]="isLoading || !loginData.username || !loginData.password"
+          [attr.aria-busy]="isLoading">
+          <span 
+            *ngIf="isLoading" 
+            class="spinner-border spinner-border-sm me-2" 
+            role="status" 
+            aria-hidden="true">
+          </span>
+          <span *ngIf="!isLoading">
+            <i class="bi bi-box-arrow-in-right me-2"></i>
+          </span>
+          {{ isLoading ? translate('login.loggingIn') : translate('login.loginButton') }}
         </button>
       </form>
 
-      <!-- Language Selector -->
-      <div class="language-selector mt-4">
-        <div class="dropdown">
-          <button 
-            class="btn btn-link dropdown-toggle language-btn" 
-            type="button" 
-            data-bs-toggle="dropdown" 
-            aria-expanded="false">
-            <span class="flag-emoji me-2">{{ currentLanguage === 'th' ? '🇹🇭' : '🇺🇸' }}</span>
-            {{ currentLanguage === 'th' ? 'ไทย' : 'English' }}
-          </button>
-          <ul class="dropdown-menu">
-            <li>
-              <button 
-                class="dropdown-item" 
-                type="button"
-                (click)="switchLanguage('th')"
-                [class.active]="currentLanguage === 'th'">
-                <span class="flag-emoji me-2">🇹🇭</span>
-                ไทย
-              </button>
-            </li>
-            <li>
-              <button 
-                class="dropdown-item" 
-                type="button"
-                (click)="switchLanguage('en')"
-                [class.active]="currentLanguage === 'en'">
-                <span class="flag-emoji me-2">🇺🇸</span>
-                English
-              </button>
-            </li>
-          </ul>
-        </div>
+      <!-- Language Selector Component -->
+      <div class="language-selector-wrapper mt-4">
+        <app-language-selector 
+          [style]="'dropdown'"
+          [size]="'md'"
+          [showLanguageName]="true"
+          [showFlag]="true"
+          [buttonStyle]="'link'"
+          [dropdownPosition]="'start'"
+          [ariaLabel]="getText('เลือกภาษา', 'Select Language')"
+          (languageChanged)="onLanguageChanged($event)">
+        </app-language-selector>
+      </div>
+
+      <!-- Footer Info (Optional) -->
+      <div class="login-footer mt-4 text-center">
+        <small class="text-muted">
+          {{ getText('© 2024 KHONTAMWEB. สงวนลิขสิทธิ์', '© 2024 KHONTAMWEB. All rights reserved') }}
+        </small>
       </div>
     </div>
   </div>
@@ -126,6 +135,12 @@
         <div class="icon-circle">
           <i class="bi bi-headset"></i>
         </div>
+        <h3 class="support-title mt-3">
+          {{ getText('ระบบจัดการตั๋วสนับสนุน', 'Support Ticket System') }}
+        </h3>
+        <p class="support-subtitle">
+          {{ getText('จัดการและติดตามปัญหาได้อย่างมีประสิทธิภาพ', 'Manage and track issues efficiently') }}
+        </p>
       </div>
     </div>
   </div>

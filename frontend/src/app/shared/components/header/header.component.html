@@ -2,57 +2,50 @@
 
 <!-- ✅ Token Warning Bar -->
 <div *ngIf="showTokenWarning" class="token-warning-bar">
-  <span>⚠️ {{ getText('Your session will expire soon. Do you want to extend it?', 'เซสชันของคุณจะหมดอายุเร็วๆ นี้
-    ต้องการต่ออายุหรือไม่?') }}</span>
+  <span>⚠️ {{ getTimeLeftText() }}</span>
   <button (click)="refreshSession()" class="btn-refresh" [disabled]="isRefreshing">
     <span *ngIf="isRefreshing" class="spinner-border spinner-border-sm me-2"></span>
-    {{ isRefreshing ? getText('Refreshing...', 'กำลังต่ออายุ...') : getText('Extend Session', 'ต่ออายุเซสชัน') }}
+    {{ isRefreshing ? translate('common.refreshing') : translate('common.extendSession') }}
   </button>
-  <button (click)="dismissWarning()" class="btn-dismiss">×</button>
+  <button (click)="dismissWarning()" class="btn-dismiss" [attr.aria-label]="translate('common.dismiss')">×</button>
 </div>
 
 <header class="header">
   <div class="header-content">
     <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle d-md-none" (click)="toggleMobileMenu()">
+    <button 
+      class="mobile-menu-toggle d-md-none" 
+      (click)="toggleMobileMenu()"
+      [attr.aria-label]="translate('common.toggleMenu')">
       <i class="bi bi-list"></i>
     </button>
 
     <!-- Right Side Navigation -->
     <div class="header-nav ms-auto">
 
-      <!-- ✅ NEW: Notifications Bell (Support team only) -->
+      <!-- ✅ Notifications Bell (Support team only) -->
       <app-notification-bell></app-notification-bell>
 
-      <!-- Language Selector -->
-      <div class="dropdown">
-        <button class="btn-outline-secondary dropdown-toggle language-btn" type="button" data-bs-toggle="dropdown"
-          aria-expanded="false" [attr.aria-label]="getText('Select Language', 'เลือกภาษา')">
-          <i class="bi bi-globe me-2"></i>
-          {{ currentLanguage === 'th' ? 'TH' : 'EN' }}
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button class="dropdown-item" type="button" (click)="switchLanguage('th')"
-              [class.active]="currentLanguage === 'th'" [attr.aria-pressed]="currentLanguage === 'th'">
-              <span class="flag-emoji me-2">🇹🇭</span>
-              ไทย
-            </button>
-          </li>
-          <li>
-            <button class="dropdown-item" type="button" (click)="switchLanguage('en')"
-              [class.active]="currentLanguage === 'en'" [attr.aria-pressed]="currentLanguage === 'en'">
-              <span class="flag-emoji me-2">🇺🇸</span>
-              English
-            </button>
-          </li>
-        </ul>
-      </div>
+      <!-- ✅ Language Selector Component -->
+      <app-language-selector 
+        [style]="'dropdown'"
+        [size]="'md'"
+        [buttonStyle]="'outline'"
+        [dropdownPosition]="'end'"
+        [showLanguageName]="true"
+        [showFlag]="true"
+        [ariaLabel]="translate('common.selectLanguage')"
+        (languageChanged)="onLanguageChanged($event)">
+      </app-language-selector>
 
       <!-- User Dropdown -->
       <div class="dropdown">
-        <button class="btn-link dropdown-toggle user-dropdown" type="button" data-bs-toggle="dropdown"
-          aria-expanded="false" [attr.aria-label]="getText('User Menu', 'เมนูผู้ใช้')">
+        <button 
+          class="btn-link dropdown-toggle user-dropdown" 
+          type="button" 
+          data-bs-toggle="dropdown"
+          aria-expanded="false" 
+          [attr.aria-label]="translate('common.userMenu')">
           <div class="user-avatar">
             <i class="bi bi-person-circle"></i>
           </div>
@@ -89,7 +82,7 @@
           <li>
             <a class="dropdown-item" href="#" (click)="goToProfile($event)">
               <i class="bi bi-person me-2"></i>
-              {{ getText('My Profile', 'โปรไฟล์ของฉัน') }}
+              {{ translate('menu.myProfile') }}
             </a>
           </li>
 
@@ -97,7 +90,7 @@
           <li>
             <a class="dropdown-item" href="#" (click)="goToSettings($event)">
               <i class="bi bi-gear me-2"></i>
-              {{ getText('Settings', 'การตั้งค่า') }}
+              {{ translate('menu.settings') }}
             </a>
           </li>
 
@@ -110,7 +103,7 @@
           <li *ngIf="hasRole(ROLES.ADMIN)">
             <a class="dropdown-item" [routerLink]="['/admin']">
               <i class="bi bi-shield-check me-2"></i>
-              {{ getText('Admin Panel', 'แผงผู้ดูแล') }}
+              {{ translate('menu.adminPanel') }}
             </a>
           </li>
 
@@ -118,7 +111,7 @@
           <li *ngIf="hasAnyRole([ROLES.ADMIN, ROLES.SUPPORTER])">
             <a class="dropdown-item" [routerLink]="['/support']">
               <i class="bi bi-headset me-2"></i>
-              {{ getText('Support Panel', 'แผงสนับสนุน') }}
+              {{ translate('menu.supportPanel') }}
             </a>
           </li>
 
@@ -126,7 +119,7 @@
           <li *ngIf="hasPermission(permissionEnum.ADD_USER) || hasPermission(permissionEnum.DEL_USER)">
             <a class="dropdown-item" [routerLink]="['/admin/users']">
               <i class="bi bi-people me-2"></i>
-              {{ getText('User Management', 'จัดการผู้ใช้') }}
+              {{ translate('menu.userManagement') }}
             </a>
           </li>
 
@@ -134,7 +127,7 @@
           <li *ngIf="hasAnyRole([ROLES.ADMIN, ROLES.SUPPORTER])">
             <a class="dropdown-item" [routerLink]="['/reports']">
               <i class="bi bi-graph-up me-2"></i>
-              {{ getText('Reports', 'รายงาน') }}
+              {{ translate('menu.reports') }}
             </a>
           </li>
 
@@ -146,7 +139,7 @@
           <li>
             <a class="dropdown-item text-danger" href="#" (click)="logout($event)">
               <i class="bi bi-box-arrow-right me-2"></i>
-              {{ getText('Logout', 'ออกจากระบบ') }}
+              {{ translate('common.logout') }}
             </a>
           </li>
         </ul>

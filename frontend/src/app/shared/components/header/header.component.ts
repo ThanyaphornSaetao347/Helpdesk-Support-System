@@ -6,6 +6,7 @@ import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
+import { LanguageService } from '../../services/language.service'; // ✅ เพิ่ม Language Service
 
 // ✅ Import Permission Models
 import { permissionEnum, UserRole, ROLES } from '../../models/permission.model';
@@ -14,8 +15,9 @@ import { User, AuthState, UserWithPermissions } from '../../models/user.model';
 // ✅ Import Permission Directives
 import { HasPermissionDirective, HasRoleDirective } from '../../directives/permission.directive';
 
-// ✅ Import NotificationBellComponent and NotificationService
+// ✅ Import Components
 import { NotificationBellComponent } from '../notification-bell/notification-bell.component';
+import { LanguageSelectorComponent } from '../language-selector/language-selector.component'; // ✅ เพิ่ม
 import { NotificationService } from '../../services/notification.service';
 
 @Component({
@@ -26,14 +28,16 @@ import { NotificationService } from '../../services/notification.service';
     RouterModule,
     HasPermissionDirective,
     HasRoleDirective,
-    NotificationBellComponent
+    NotificationBellComponent,
+    LanguageSelectorComponent // ✅ เพิ่ม Language Selector
   ],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   public authService = inject(AuthService);
-  private notificationService = inject(NotificationService); // ✅ Inject NotificationService
+  private languageService = inject(LanguageService); // ✅ เพิ่ม Language Service
+  private notificationService = inject(NotificationService);
   private router = inject(Router);
 
   // ✅ User and Auth State with enhanced types
@@ -151,7 +155,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.socketConnectionState = state;
     });
 
-    this.subscriptions.push(userSub, authSub, warningSub, socketStateSub);
+    // ✅ Subscribe to language changes
+    const langSub = this.languageService.currentLanguage$.subscribe(lang => {
+      this.currentLanguage = lang;
+      console.log('🌐 Language changed in header:', lang);
+    });
+
+    this.subscriptions.push(userSub, authSub, warningSub, socketStateSub, langSub);
   }
 
   // ===== DATA LOADING ===== ✅
@@ -180,11 +190,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private loadLanguagePreference(): void {
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && ['th', 'en'].includes(savedLanguage)) {
-      this.currentLanguage = savedLanguage;
-      console.log('🌐 Language preference loaded:', this.currentLanguage);
-    }
+    // Language Service จะจัดการการโหลดภาษาจาก localStorage อัตโนมัติ
+    this.currentLanguage = this.languageService.getCurrentLanguage();
+    console.log('🌐 Language preference loaded:', this.currentLanguage);
   }
 
   private loadTokenInfo(): void {
@@ -275,9 +283,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (!primaryRole) return 'User';
     
     switch (primaryRole) {
-      case ROLES.ADMIN: return this.currentLanguage === 'th' ? 'ผู้ดูแลระบบ' : 'Administrator';
-      case ROLES.SUPPORTER: return this.currentLanguage === 'th' ? 'ผู้สนับสนุน' : 'Support Team';
-      case ROLES.USER: return this.currentLanguage === 'th' ? 'ผู้ใช้งาน' : 'User';
+      case ROLES.ADMIN: return this.translate('roles.admin');
+      case ROLES.SUPPORTER: return this.translate('roles.supporter');
+      case ROLES.USER: return this.translate('roles.user');
       default: return primaryRole;
     }
   }
@@ -304,11 +312,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   getSocketStatusText(): string {
     switch (this.socketConnectionState) {
       case 'connected':
-        return this.getText('Connected', 'เชื่อมต่อแล้ว');
+        return this.translate('common.connected');
       case 'connecting':
-        return this.getText('Connecting...', 'กำลังเชื่อมต่อ...');
+        return this.translate('common.connecting');
       case 'disconnected':
-        return this.getText('Disconnected', 'ไม่ได้เชื่อมต่อ');
+        return this.translate('common.disconnected');
       default:
         return '';
     }
@@ -345,35 +353,34 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ===== LANGUAGE METHODS ===== ✅
+
+  /**
+   * ✅ แปลภาษาจาก translation key
+   */
+  translate(key: string, params?: { [key: string]: any }): string {
+    return this.languageService.translate(key, params);
+  }
+
+  /**
+   * ✅ ดึงข้อความตามภาษาปัจจุบัน (สำหรับ backward compatibility)
+   */
   getText(en: string, th: string): string {
-    return this.currentLanguage === 'th' ? th : en;
+    return this.languageService.getText(th, en);
   }
 
-  // ===== LANGUAGE MANAGEMENT ===== ✅
-
-  switchLanguage(lang: string): void {
-    if (['th', 'en'].includes(lang) && lang !== this.currentLanguage) {
-      console.log('🌐 Switching language from', this.currentLanguage, 'to', lang);
-      
-      this.currentLanguage = lang;
-      localStorage.setItem('language', lang);
-      
-      this.broadcastLanguageChange(lang);
-    }
-  }
-
-  private broadcastLanguageChange(language: string): void {
-    const event = new CustomEvent('language-changed', {
-      detail: { language }
-    });
-    window.dispatchEvent(event);
+  /**
+   * ✅ Handle language change event from selector
+   */
+  onLanguageChanged(language: string): void {
+    console.log('🌐 Language changed via selector in header:', language);
+    // Language service จะจัดการเอง
   }
 
   // ===== NAVIGATION METHODS ===== ✅
 
   /**
    * Navigate to My Profile page
-   * ✅ UPDATED: Now uses correct route '/profile'
    */
   goToProfile(event: Event): void {
     event.preventDefault();
@@ -449,10 +456,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     console.log('🚪 Logout requested');
     
     const confirmLogout = confirm(
-      this.getText(
-        'Are you sure you want to logout?', 
-        'คุณต้องการออกจากระบบหรือไม่?'
-      )
+      this.translate('common.logoutConfirm')
     );
     
     if (confirmLogout) {
@@ -528,17 +532,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     
     const minutes = this.tokenInfo.time_left_minutes;
     if (minutes <= 0) {
-      return this.getText('Session expired', 'เซสชันหมดอายุแล้ว');
+      return this.translate('common.sessionExpired');
     }
     
-    const timeText = minutes === 1 ? 
-      this.getText('1 minute', '1 นาที') : 
-      this.getText(`${minutes} minutes`, `${minutes} นาที`);
-    
-    return this.getText(
-      `Session expires in ${timeText}`,
-      `เซสชันจะหมดอายุใน ${timeText}`
-    );
+    return this.translate('common.sessionExpiresIn', { minutes });
   }
 
   // ===== MOBILE MENU ===== ✅

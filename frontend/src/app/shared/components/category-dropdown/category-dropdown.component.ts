@@ -1,8 +1,8 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, Observable, of } from 'rxjs';
-import { takeUntil, map, catchError, tap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { CategoryService } from '../../services/category.service';
 import { CategoryDDL, CategoryStatus, isCategoryStatus, cateDDL } from '../../models/category.model';
 
@@ -13,7 +13,7 @@ import { CategoryDDL, CategoryStatus, isCategoryStatus, cateDDL } from '../../mo
   templateUrl: './category-dropdown.component.html',
   styleUrls: ['./category-dropdown.component.css']
 })
-export class CategoryDropdownComponent implements OnInit, OnDestroy {
+export class CategoryDropdownComponent implements OnInit, OnDestroy, OnChanges {
   private categoryService = inject(CategoryService);
 
   @Input() label: string = 'เลือกหมวดหมู่';
@@ -36,9 +36,10 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
   hasError = false;
 
   private destroy$ = new Subject<void>();
+  private isDataLoaded = false; // ✅ ติดตามว่าโหลดข้อมูลเสร็จแล้วหรือยัง
 
   ngOnInit(): void {
-    // this.loadCategories(); ← comment หรือลบออก
+    this.loadCategories();
   }
 
   ngOnDestroy(): void {
@@ -46,56 +47,113 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadCategories(): Observable<CategoryDDL[]> {  // ← เปลี่ยน return type
+  // ✅ เพิ่ม ngOnChanges เพื่อตรวจจับการเปลี่ยนแปลงของ @Input
+  ngOnChanges(changes: SimpleChanges): void {
+    // ตรวจสอบว่ามีการเปลี่ยนแปลง selectedCategoryId หรือไม่
+    if (changes['selectedCategoryId']) {
+      const currentValue = changes['selectedCategoryId'].currentValue;
+      const previousValue = changes['selectedCategoryId'].previousValue;
+      
+      // ถ้าไม่ใช่ครั้งแรก และค่าเปลี่ยน
+      if (!changes['selectedCategoryId'].firstChange && currentValue !== previousValue) {
+        console.log('🔄 Category ID changed:', previousValue, '->', currentValue);
+        
+        // ถ้าโหลดข้อมูลเสร็จแล้ว ให้ sync selection ทันที
+        if (this.isDataLoaded && this.categories.length > 0) {
+          this.syncSelection();
+        }
+      }
+    }
+
+    // ตรวจสอบว่ามีการเปลี่ยนแปลง status หรือไม่
+    if (changes['status'] && !changes['status'].firstChange) {
+      console.log('🔄 Status changed, reloading categories...');
+      this.loadCategories();
+    }
+  }
+
+  loadCategories(): void {
     this.loading = true;
     this.error = '';
     this.hasError = false;
+    this.isDataLoaded = false; // ✅ รีเซ็ต flag
 
+    // ✅ Fix: Type guard เพื่อให้แน่ใจว่า status เป็น CategoryStatus
     const statusValue: CategoryStatus = isCategoryStatus(this.status) ? this.status : 'active';
 
-    return this.categoryService.getCategoriesDDLWithCache({ status: statusValue })
-      .pipe(
-        map(response => {
+    this.categoryService.getCategoriesDDLWithCache({ status: statusValue })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
           console.log('Categories DDL Response:', response);
           if (response.code === 1) {
             this.categories = response.data;
             this.error = '';
-            this.loading = false;
-            return response.data;
+            this.isDataLoaded = true; // ✅ เซ็ต flag เมื่อโหลดเสร็จ
+
+            // ✅ หลังจากโหลดเสร็จ ให้ sync selection ทันที
+            this.syncSelection();
           } else {
             this.error = response.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
             this.categories = [];
-            this.loading = false;
-            throw new Error(this.error);
           }
-        }),
-        catchError(err => {
+          this.loading = false;
+        },
+        error: (err) => {
           console.error('Error loading categories:', err);
 
-          return this.categoryService.getCachedCategories(statusValue).pipe(
-            tap(cachedData => {
-              if (cachedData && cachedData.length > 0) {
-                console.log('✅ Using cached categories:', cachedData.length);
-                this.categories = cachedData;
-                this.error = '';
-                this.showOfflineIndicator();
-              } else {
+          // ✅ PWA: ลองใช้ cached data ถ้า API ล้มเหลว
+          this.categoryService.getCachedCategories(statusValue)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (cachedData) => {
+                if (cachedData && cachedData.length > 0) {
+                  console.log('✅ Using cached categories:', cachedData.length);
+                  this.categories = cachedData;
+                  this.error = ''; // Clear error ถ้ามี cached data
+                  this.isDataLoaded = true; // ✅ เซ็ต flag
+                  this.showOfflineIndicator();
+                  
+                  // ✅ Sync selection หลังได้ cache data
+                  this.syncSelection();
+                } else {
+                  this.error = typeof err === 'string' ? err : 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+                  this.categories = [];
+                }
+                this.loading = false;
+              },
+              error: () => {
                 this.error = typeof err === 'string' ? err : 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
                 this.categories = [];
+                this.loading = false;
               }
-              this.loading = false;
-            }),
-            map(cachedData => cachedData || []),
-            catchError(() => {
-              this.error = typeof err === 'string' ? err : 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
-              this.categories = [];
-              this.loading = false;
-              return of([]);
-            })
-          );
-        }),
-        takeUntil(this.destroy$)
-      );
+            });
+        }
+      });
+  }
+
+  // ✅ Method ใหม่: Sync selection หลังจากโหลดข้อมูลเสร็จ
+  private syncSelection(): void {
+    if (!this.selectedCategoryId || this.selectedCategoryId === '') {
+      return;
+    }
+
+    // ตรวจสอบว่า selectedCategoryId มีอยู่ใน categories หรือไม่
+    const selectedCategory = this.categories.find(c => c.id === +this.selectedCategoryId);
+    
+    if (selectedCategory) {
+      console.log('✅ Synced category selection:', this.selectedCategoryId, selectedCategory);
+      
+      // อัพเดท DOM โดยตรงเพื่อให้แน่ใจว่า dropdown แสดงค่าที่ถูกต้อง
+      setTimeout(() => {
+        const selectElement = document.getElementById('categorySelect') as HTMLSelectElement;
+        if (selectElement) {
+          selectElement.value = String(this.selectedCategoryId);
+        }
+      }, 0);
+    } else {
+      console.warn('⚠️ Selected category ID not found in loaded categories:', this.selectedCategoryId);
+    }
   }
 
   private showOfflineIndicator(): void {
@@ -134,10 +192,7 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
   }
 
   refresh(): void {
-    this.loadCategories().subscribe({
-      next: () => console.log('✅ Categories refreshed'),
-      error: (err) => console.error('❌ Refresh error:', err)
-    });
+    this.loadCategories();
   }
 
   // Method สำหรับ validation จากภายนอก
@@ -152,8 +207,6 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
 
   getCategoryDisplayName(category: CategoryDDL): string {
     // รองรับทั้ง format จาก API ใหม่ (categoryName) และ API เก่า (name)
-    console.log(`category21212121212121 ${category}`);
-
     return `${category.categoryName}` || `${category.name}`;
   }
 
@@ -161,7 +214,7 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
     const c: cateDDL = {
       id: category.id,
       name: category.categoryName ?? category.name ?? '',
-      language_id: category.language_id // หรือแก้ typo ก่อน
+      language_id: category.language_id
     };
     return c.name;
   }
@@ -174,6 +227,13 @@ export class CategoryDropdownComponent implements OnInit, OnDestroy {
       category: null,
       categoryId: ''
     });
+  }
+
+  // ✅ Method สำหรับ parent component เรียกเพื่อ force sync
+  public forceSync(): void {
+    if (this.isDataLoaded && this.categories.length > 0) {
+      this.syncSelection();
+    }
   }
 
   // Method สำหรับตรวจสอบว่ามี validation error จาก parent component หรือไม่

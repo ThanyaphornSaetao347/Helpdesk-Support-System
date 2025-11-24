@@ -1,14 +1,14 @@
 <!-- src/app/pages/dashboard/dashboard.component.html -->
 
 <div class="dashboard">
-  <!-- Breadcrumb - ตรงกับ Figma -->
+  <!-- Breadcrumb -->
   <div class="breadcrumb-container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item">
-          <a href="#" routerLink="/dashboard">Dashboard</a>
+          <a href="#" routerLink="/dashboard">{{ translate('menu.dashboard') }}</a>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ translate('dashboard.title') }}</li>
       </ol>
     </nav>
   </div>
@@ -16,9 +16,9 @@
   <!-- Loading State -->
   <div *ngIf="isLoading" class="text-center py-4">
     <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ translate('common.loading') }}</span>
     </div>
-    <p class="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
+    <p class="mt-2 text-muted">{{ translate('common.loading') }}</p>
   </div>
 
   <!-- Error State -->
@@ -27,9 +27,9 @@
     {{ dashboardData.error }}
   </div>
 
-  <!-- Dashboard Header Card - ตรงกับ Figma -->
+  <!-- Dashboard Header Card -->
   <div class="dashboard-header-card">
-    <h1>Dashboard</h1>
+    <h1>{{ translate('dashboard.title') }}</h1>
 
     <!-- Stats Cards Row -->
     <div class="d-flex justify-content-between align-items-center gap-4">
@@ -40,7 +40,7 @@
             <i class="bi bi-ticket-perforated stats-icon" style="color: #5873F8;"></i>
           </div>
           <div class="stats-text-container">
-            <p>Total Ticket</p>
+            <p>{{ translate('dashboard.totalTickets') }}</p>
             <h4>{{ formatNumber(dashboardStats?.total || 0) }}</h4>
           </div>
         </div>
@@ -53,7 +53,7 @@
             <i class="bi bi-plus-circle stats-icon" style="color: #FFC107;"></i>
           </div>
           <div class="stats-text-container">
-            <p>New Ticket</p>
+            <p>{{ translate('dashboard.newTickets') }}</p>
             <h4>{{ formatNumber(getNewCount()) }}</h4>
           </div>
         </div>
@@ -66,7 +66,7 @@
             <i class="bi bi-chat stats-icon" style="color: #1FBCD5;"></i>
           </div>
           <div class="stats-text-container">
-            <p>In Progress</p>
+            <p>{{ translate('dashboard.inProgress') }}</p>
             <h4>{{ formatNumber(getInProgressCount()) }}</h4>
           </div>
         </div>
@@ -79,7 +79,7 @@
             <i class="bi bi-check-circle stats-icon" style="color: #28A745;"></i>
           </div>
           <div class="stats-text-container">
-            <p>Complete</p>
+            <p>{{ translate('dashboard.completed') }}</p>
             <h4>{{ formatNumber(getCompleteCount()) }}</h4>
           </div>
         </div>
@@ -87,47 +87,37 @@
     </div>
   </div>
 
-  <!-- line chart -->
-  <!-- Charts Section -->
+  <!-- Line Chart -->
   <div class="row mb-4">
     <div class="col-md-12">
       <div class="card shadow">
         <div class="card-header py-3">
           <div class="d-flex justify-content-between align-items-center w-100">
-            <h6 class="m-0 font-weight-bold text-primary">All Tickets at Month</h6>
+            <h6 class="m-0 font-weight-bold text-primary">{{ translate('dashboard.allTicketsAtMonth') }}</h6>
             <div class="chart-controls">
               <div class="d-flex gap-2">
+                <!-- Month Dropdown -->
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="monthDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false">
-                    <span>{{ selectedMonth }}</span>
+                    <span>{{ getDisplayMonthName(selectedMonth) }}</span>
                   </button>
                   <ul class="dropdown-menu" aria-labelledby="monthDropdown">
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('January')">มกราคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectMonth('February')">กุมภาพันธ์</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('March')">มีนาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('April')">เมษายน</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('May')">พฤษภาคม</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('June')">มิถุนายน</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('July')">กรกฎาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('August')">สิงหาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectMonth('September')">กันยายน</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('October')">ตุลาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectMonth('November')">พฤศจิกายน</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('December')">ธันวาคม</a>
-                    </li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('January')">{{ getMonthName(1) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('February')">{{ getMonthName(2) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('March')">{{ getMonthName(3) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('April')">{{ getMonthName(4) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('May')">{{ getMonthName(5) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('June')">{{ getMonthName(6) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('July')">{{ getMonthName(7) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('August')">{{ getMonthName(8) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('September')">{{ getMonthName(9) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('October')">{{ getMonthName(10) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('November')">{{ getMonthName(11) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectMonth('December')">{{ getMonthName(12) }}</a></li>
                   </ul>
                 </div>
+                <!-- Year Dropdown -->
                 <div class="dropdown ms-2">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="yearDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false">
@@ -152,50 +142,38 @@
     </div>
   </div>
 
-  <!-- bar chart -->
+  <!-- Bar Chart -->
   <div class="row mb-4">
     <div class="col-md-12">
       <div class="card shadow">
         <div class="card-header py-3">
           <div class="d-flex justify-content-between align-items-center w-100">
-            <h6 class="m-0 font-weight-bold text-primary">All Tickets at Month Bar Chart</h6>
+            <h6 class="m-0 font-weight-bold text-primary">{{ translate('dashboard.monthlyBarChart') }}</h6>
             <div class="chart-controls">
               <div class="d-flex gap-2">
-                <!-- Month dropdown สำหรับ Bar Chart -->
+                <!-- Month Dropdown for Bar Chart -->
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="barMonthDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false">
-                    <span>{{ selectedBarMonth }}</span>
+                    <span>{{ getDisplayMonthName(selectedBarMonth) }}</span>
                   </button>
                   <ul class="dropdown-menu" aria-labelledby="barMonthDropdown">
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('January')">มกราคม</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('February')">กุมภาพันธ์</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('March')">มีนาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('April')">เมษายน</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('May')">พฤษภาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('June')">มิถุนายน</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('July')">กรกฎาคม</a>
-                    </li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('August')">สิงหาคม</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('September')">กันยายน</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('October')">ตุลาคม</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('November')">พฤศจิกายน</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0)"
-                        (click)="selectBarMonth('December')">ธันวาคม</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('January')">{{ getMonthName(1) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('February')">{{ getMonthName(2) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('March')">{{ getMonthName(3) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('April')">{{ getMonthName(4) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('May')">{{ getMonthName(5) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('June')">{{ getMonthName(6) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('July')">{{ getMonthName(7) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('August')">{{ getMonthName(8) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('September')">{{ getMonthName(9) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('October')">{{ getMonthName(10) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('November')">{{ getMonthName(11) }}</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectBarMonth('December')">{{ getMonthName(12) }}</a></li>
                   </ul>
                 </div>
 
-                <!-- Year dropdown สำหรับ Bar Chart -->
+                <!-- Year Dropdown for Bar Chart -->
                 <div class="dropdown ms-2">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="barYearDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false">
@@ -212,7 +190,6 @@
           </div>
         </div>
 
-        <!-- Chart area -->
         <div class="card-body">
           <div class="chart-area">
             <canvas #monthlybarChart id="monthlybarChart" style="height: 400px;"></canvas>
@@ -222,18 +199,17 @@
     </div>
   </div>
 
-<!-- categories chart -->
+  <!-- Categories Chart -->
   <div class="row">
     <!-- All Ticket Summary by Categories Chart -->
     <div class="col-md-8 mb-4">
       <div class="card chart-card">
         <div class="card-header">
           <div class="d-flex justify-content-between align-items-center w-100">
-            <h5 class="card-title">All Ticket Summary by Categories</h5>
+            <h5 class="card-title">{{ translate('dashboard.ticketSummaryByCategories') }}</h5>
             <div class="dropdown">
               <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <span>{{ selectedCategoryYear }}</span>
-                <!-- <i class="bi bi-chevron-down ms-2"></i> -->
               </button>
               <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="javascript:void(0)" (click)="selectCategoryYear('2025')">2025</a></li>
@@ -255,14 +231,14 @@
       <div class="card chart-card">
         <div class="card-header">
           <div class="text-center w-100">
-            <h5 class="card-title">Ticket Summary by Categories</h5>
+            <h5 class="card-title">{{ translate('dashboard.categorySummary') }}</h5>
           </div>
         </div>
         <div class="card-body text-center">
           <div class="chart-container d-flex justify-content-center align-items-center">
             <canvas #pieChart id="pieChart" width="204" height="204"></canvas>
           </div>
-          <!-- Dynamic Legend จากข้อมูล API -->
+          <!-- Dynamic Legend -->
           <div class="pie-legend" *ngIf="categoryStats.length > 0">
             <div class="pie-legend-column" *ngFor="let column of getCategoryColumns(); let isFirst = first">
               <span class="legend-item" *ngFor="let item of column">

@@ -153,6 +153,8 @@ export interface DeleteTicketResponse {
 export interface MasterFilterCategory {
   id: number;
   name: string;
+  name_th?: string;
+  name_en?: string;
 }
 
 export interface MasterFilterProject {

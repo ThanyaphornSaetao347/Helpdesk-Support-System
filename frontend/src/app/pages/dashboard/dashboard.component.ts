@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../../shared/services/api.service';
 import { AuthService } from '../../shared/services/auth.service';
 import { DashboardService } from '../../shared/services/dashboard.service';
+import { LanguageService } from '../../shared/services/language.service'; // ✅ เพิ่ม
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import {
   DashboardStatsResponse,
@@ -35,8 +36,12 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private apiService = inject(ApiService);
   private authService = inject(AuthService);
   private dashboardService = inject(DashboardService);
+  private languageService = inject(LanguageService); // ✅ เพิ่ม
   private router = inject(Router);
-  private subscriptions = new Subscription(); // ✅ ใช้ Subscription เดียว
+  private subscriptions = new Subscription();
+
+  // ✅ เพิ่ม current language state
+  currentLanguage: 'th' | 'en' = 'th';
 
   // Chart References
   @ViewChild('monthlyChart', { static: false }) monthlyChartRef!: ElementRef<HTMLCanvasElement>;
@@ -62,18 +67,19 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private pieChart: Chart | null = null;
 
   // Filter states
-  // Filter states - แยกสำหรับแต่ละ chart
-  selectedMonth = 'June';           // สำหรับ line chart
-  selectedYear = '2025';            // สำหรับ line chart
-
-  selectedBarMonth = 'June';        // สำหรับ bar chart
-  selectedBarYear = '2025';         // สำหรับ bar chart
-
-  selectedCategoryYear = '2025';    // สำหรับ category chart (เดิม)
+  selectedMonth = 'June';
+  selectedYear = '2025';
+  selectedBarMonth = 'June';
+  selectedBarYear = '2025';
+  selectedCategoryYear = '2025';
 
   // Legacy data for projects
   customerForProjects: any[] = [];
   loadingCustomers = false;
+
+  // Tickets data for bar chart
+  newTickets: any[] = [];
+  completedTickets: any[] = [];
 
   // Getters for convenience
   get dashboardStats(): any {
@@ -91,18 +97,153 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
     console.log('Dashboard initialized, current user:', this.currentUser);
-    this.loadDashboardData();
+
+    // ✅ รอให้ language service โหลด translations เสร็จก่อน
+    this.setupLanguageService();
+
+    // ✅ รอสักครู่ให้ translations โหลดเสร็จ
+    setTimeout(() => {
+      this.loadDashboardData();
+    }, 100);
   }
 
   ngAfterViewInit(): void {
-  setTimeout(() => {
-    this.initializeAllCharts();
-    // โหลดข้อมูล bar chart หลังจากที่มีข้อมูล dashboard stats แล้ว
-    if (this.dashboardData.stats) {
-      this.loadMonthlyTicketsForBar();
+    setTimeout(() => {
+      this.initializeAllCharts();
+      if (this.dashboardData.stats) {
+        this.loadMonthlyTicketsForBar();
+      }
+    }, 10);
+  }
+
+  // ===== LANGUAGE SERVICE SETUP ===== ✅
+
+  private setupLanguageService(): void {
+    // Subscribe to language changes
+    const langSub = this.languageService.currentLanguage$.subscribe(lang => {
+      this.currentLanguage = lang;
+      console.log('🌐 Language changed in dashboard:', lang);
+
+      // อัพเดท charts เมื่อเปลี่ยนภาษา
+      this.updateAllChartsLanguage();
+    });
+
+    this.subscriptions.add(langSub);
+  }
+
+  /**
+   * ✅ อัพเดทภาษาของ charts ทั้งหมด
+   */
+  private updateAllChartsLanguage(): void {
+    console.log('Updating all charts language to:', this.currentLanguage);
+
+    // อัพเดทแต่ละ chart ตามภาษาใหม่
+    if (this.monthlyChart) {
+      this.updateChartLabelsLanguage(this.monthlyChart);
     }
-  }, 10);
-}
+    if (this.monthlybarChart) {
+      this.updateChartLabelsLanguage(this.monthlybarChart);
+    }
+    if (this.categoryChart) {
+      this.updateChartLabelsLanguage(this.categoryChart);
+    }
+    if (this.pieChart) {
+      this.updateChartLabelsLanguage(this.pieChart);
+    }
+  }
+
+  /**
+   * ✅ อัพเดทภาษาของ chart labels
+   */
+  private updateChartLabelsLanguage(chart: Chart): void {
+    // อัพเดท axis titles และ labels ตามภาษา
+    if (chart.options?.scales) {
+      // ✅ ใช้ bracket notation แทน dot notation
+      const xScale = chart.options.scales['x'];
+      const yScale = chart.options.scales['y'];
+
+      if (xScale && (xScale as any).title) {
+        (xScale as any).title.text = this.translate('dashboard.dayLabel');
+      }
+      if (yScale && (yScale as any).title) {
+        (yScale as any).title.text = this.translate('dashboard.ticketCountLabel');
+      }
+    }
+
+    // อัพเดท dataset labels
+    if (chart.data.datasets) {
+      chart.data.datasets.forEach((dataset) => {
+        if (dataset.label === 'New Tickets' || dataset.label?.includes('ใหม่')) {
+          dataset.label = this.translate('dashboard.newTickets');
+        } else if (dataset.label === 'Completed' || dataset.label?.includes('เสร็จ')) {
+          dataset.label = this.translate('dashboard.completed');
+        }
+      });
+    }
+
+    chart.update('none'); // อัพเดทโดยไม่มี animation
+  }
+
+  // ===== TRANSLATION METHODS ===== ✅
+
+  /**
+   * ✅ แปลภาษาจาก translation key
+   */
+  translate(key: string, params?: { [key: string]: any }): string {
+    return this.languageService.translate(key, params);
+  }
+
+  /**
+   * ✅ ดึงข้อความตามภาษาปัจจุบัน
+   */
+  getText(thText: string, enText: string): string {
+    return this.languageService.getText(thText, enText);
+  }
+
+  /**
+   * ✅ ดึงชื่อเดือนตามภาษา
+   */
+  getMonthName(monthIndex: number): string {
+    const monthNames = {
+      th: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
+      en: ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December']
+    };
+
+    const lang = this.currentLanguage;
+    return monthNames[lang][monthIndex - 1] || '';
+  }
+
+  /**
+   * ✅ ดึงชื่อเดือนแบบสั้นตามภาษา (สำหรับ chart labels)
+   */
+  getMonthShortName(monthIndex: number): string {
+    const monthShortNames = {
+      th: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+        'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+      en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    };
+
+    const lang = this.currentLanguage;
+    return monthShortNames[lang][monthIndex - 1] || '';
+  }
+
+  /**
+   * ✅ ดึงชื่อสถานะตามภาษา
+   */
+  getStatusName(statusId: number): string {
+    const statusMap: { [key: number]: string } = {
+      1: this.translate('tickets.pending'),
+      2: this.translate('tickets.inProgress'),
+      3: this.translate('tickets.hold'),
+      4: this.translate('tickets.resolved'),
+      5: this.translate('tickets.complete'),
+      6: this.translate('tickets.cancel')
+    };
+    return statusMap[statusId] || this.translate('common.unknown');
+  }
 
   // =============================================================================
   // DATA LOADING METHODS
@@ -132,12 +273,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.dashboardData.lastUpdated = new Date();
           console.log('Dashboard stats updated successfully:', this.dashboardData.stats);
 
-          // Update all charts after data is loaded
           this.updateAllChartsWithNewData();
           this.loadMonthlyTicketsForBar();
         } else {
           console.warn('Invalid API response:', response);
-          this.dashboardData.error = 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
+          this.dashboardData.error = this.translate('errors.cannotLoadData');
         }
 
         this.dashboardData.loading = false;
@@ -145,7 +285,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (error) => {
         console.error('Error loading dashboard stats:', error);
         this.dashboardData.loading = false;
-        this.dashboardData.error = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์';
+        this.dashboardData.error = this.translate('errors.connectionError');
 
         this.dashboardData.stats = {
           total: 0,
@@ -170,7 +310,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response) => {
         console.log('Category breakdown loaded:', response);
 
-        // ✅ response ต้องเป็น ApiResponse<CategoryStatsDTO[]>
         const data = Array.isArray(response) ? response : response.data;
 
         if (!data || data.length === 0) {
@@ -178,7 +317,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        // ----- Pie chart -----
+        // Pie chart
         const labels = data.map(item => item.category);
         const counts = data.map(item => item.count);
         const colors = data.map(item => item.color);
@@ -204,7 +343,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         });
 
-        // ----- Line chart -----
+        // Line chart
         if (this.categoryChart) this.categoryChart.destroy();
         const categoryCtx = document.getElementById('categoryChart') as HTMLCanvasElement;
 
@@ -212,15 +351,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           label: item.category,
           data: item.monthlyCounts,
           borderColor: item.color,
-          backgroundColor: item.color + '33', // สีอ่อนสำหรับ fill
+          backgroundColor: item.color + '33',
           fill: true,
           tension: 0.4
         }));
 
+        // ✅ ใช้ชื่อเดือนแบบสั้นตามภาษา
+        const monthLabels = Array.from({ length: 12 }, (_, i) => this.getMonthShortName(i + 1));
+
         this.categoryChart = new Chart(categoryCtx, {
           type: 'line',
           data: {
-            labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+            labels: monthLabels,
             datasets
           },
           options: {
@@ -245,7 +387,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.subscriptions.add(sub);
   }
-
 
   loadCustomerForProjects(): void {
     this.loadingCustomers = true;
@@ -292,7 +433,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         labels: [],
         datasets: [
           {
-            label: 'New Tickets',
+            label: this.translate('dashboard.newTickets'),
             data: [],
             borderColor: '#FFC107',
             backgroundColor: 'rgba(255, 193, 7, 0.1)',
@@ -305,7 +446,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             pointHoverBorderColor: '#FFC107'
           },
           {
-            label: 'Completed',
+            label: this.translate('dashboard.completed'),
             data: [],
             borderColor: '#28A745',
             backgroundColor: 'rgba(40, 167, 69, 0.1)',
@@ -335,9 +476,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
               boxWidth: 12,
               usePointStyle: true,
               padding: 20,
-              font: {
-                size: 12
-              }
+              font: { size: 12 }
             }
           },
           tooltip: {
@@ -349,60 +488,41 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             callbacks: {
               title: (tooltipItems) => {
                 const day = tooltipItems[0].label;
-                const monthNames = [
-                  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-                  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-                ];
-                const monthName = monthNames[this.getMonthNumber(this.selectedMonth) - 1];
-                return `วันที่ ${day} ${monthName} ${this.selectedYear}`;
+                const monthName = this.getMonthName(this.getMonthNumber(this.selectedMonth));
+                return `${this.translate('dashboard.day')} ${day} ${monthName} ${this.selectedYear}`;
               },
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y || 0;
-                const suffix = label.includes('New') ? 'ทิคเก็ตใหม่' : 'ทิคเก็ตที่เสร็จ';
-                return `${suffix}: ${value} รายการ`;
+                return `${label}: ${this.formatNumber(value)} ${this.translate('dashboard.tickets')}`;
               }
             }
           }
         },
         scales: {
           x: {
-            grid: {
-              display: false
-            },
+            grid: { display: false },
             ticks: {
               maxTicksLimit: 15,
-              font: {
-                size: 11
-              }
+              font: { size: 11 }
             },
             title: {
               display: true,
-              text: 'วันที่',
-              font: {
-                size: 12,
-                weight: 'bold'
-              }
+              text: this.translate('dashboard.dayLabel'),
+              font: { size: 12, weight: 'bold' }
             }
           },
           y: {
             beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,0.05)'
-            },
+            grid: { color: 'rgba(0,0,0,0.05)' },
             ticks: {
               stepSize: 1,
-              font: {
-                size: 11
-              }
+              font: { size: 11 }
             },
             title: {
               display: true,
-              text: 'จำนวนทิคเก็ต',
-              font: {
-                size: 12,
-                weight: 'bold'
-              }
+              text: this.translate('dashboard.ticketCountLabel'),
+              font: { size: 12, weight: 'bold' }
             }
           }
         },
@@ -418,143 +538,142 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     console.log('Monthly chart initialized');
   }
 
-  // เพิ่ม property ไว้เก็บข้อมูลที่โหลดมา
-  newTickets: any[] = [];
-  completedTickets: any[] = [];
+  private loadMonthlyTicketsForBar(): void {
+    const year = parseInt(this.selectedBarYear);
+    const month = this.getMonthNumber(this.selectedBarMonth);
 
-  // ============================================
-  // Load tickets from API
-  // ============================================
-private loadMonthlyTicketsForBar(): void {
-  const year = parseInt(this.selectedBarYear);
-  const month = this.getMonthNumber(this.selectedBarMonth); // 1-12
+    console.log('กำลังโหลดข้อมูลทิคเก็ตรายเดือนสำหรับ bar chart:', this.selectedBarMonth, year);
 
-  console.log('กำลังโหลดข้อมูลทิคเก็ตรายเดือนสำหรับ bar chart:', this.selectedBarMonth, year);
+    if (this.dashboardData.stats) {
+      console.log('ใช้ข้อมูล dashboard stats ที่มีอยู่แล้วสำหรับ bar chart');
 
-  // ใช้ข้อมูล dashboard stats ที่มีอยู่แล้วแทนการเรียก API แยก
-  if (this.dashboardData.stats) {
-    console.log('ใช้ข้อมูล dashboard stats ที่มีอยู่แล้วสำหรับ bar chart');
-    
-    // ดึงทิคเก็ตจาก dashboard stats
-    this.newTickets = [];
-    this.completedTickets = [];
+      this.newTickets = [];
+      this.completedTickets = [];
 
-    // รวบรวมทิคเก็ตใหม่จากทุกสถานะเพื่อนับทิคเก็ตที่ "สร้าง"
-    if (this.dashboardData.stats.new?.tickets) {
-      this.newTickets.push(...this.dashboardData.stats.new.tickets);
-    }
-    if (this.dashboardData.stats.inProgress?.tickets) {
-      this.newTickets.push(...this.dashboardData.stats.inProgress.tickets);
-    }
-    if (this.dashboardData.stats.complete?.tickets) {
-      this.newTickets.push(...this.dashboardData.stats.complete.tickets);
-    }
-
-    // รวบรวมทิคเก็ตที่เสร็จแล้ว (เฉพาะจากสถานะ complete)
-    if (this.dashboardData.stats.complete?.tickets) {
-      this.completedTickets = this.dashboardData.stats.complete.tickets;
-    }
-
-    console.log('Bar chart - จำนวนทิคเก็ตใหม่:', this.newTickets.length);
-    console.log('Bar chart - จำนวนทิคเก็ตที่เสร็จแล้ว:', this.completedTickets.length);
-
-    this.updateMonthlybarChart();
-  } else {
-    // หากไม่มีข้อมูล dashboard stats ให้เรียก API
-    this.dashboardService.getMonthlyTicketStats(year, month).subscribe({
-      next: (res) => {
-        console.log('ผลตอบกลับจาก API สำหรับ bar chart:', res);
-
-        // ใช้ชื่อฟิลด์ที่ตรงกับ API response
-        this.newTickets = [];
-        this.completedTickets = [];
-
-        // ดึงทิคเก็ตทั้งหมดสำหรับการนับใหม่ (ทิคเก็ตที่สร้าง)
-        if (res.data?.new?.tickets) {
-          this.newTickets.push(...res.data.new.tickets);
-        }
-        if (res.data?.inProgress?.tickets) {
-          this.newTickets.push(...res.data.inProgress.tickets);
-        }
-        if (res.data?.complete?.tickets) {
-          this.newTickets.push(...res.data.complete.tickets);
-        }
-
-        // ดึงทิคเก็ตที่เสร็จแล้ว
-        if (res.data?.complete?.tickets) {
-          this.completedTickets = res.data.complete.tickets;
-        }
-
-        console.log('API - จำนวนทิคเก็ตใหม่:', this.newTickets.length);
-        console.log('API - จำนวนทิคเก็ตที่เสร็จแล้ว:', this.completedTickets.length);
-
-        this.updateMonthlybarChart();
-      },
-      error: (err) => {
-        console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล bar chart:', err);
+      if (this.dashboardData.stats.new?.tickets) {
+        this.newTickets.push(...this.dashboardData.stats.new.tickets);
       }
-    });
-  }
-}
-  // ============================================
-  // Initialize empty chart once
-  // ============================================
-  private initializeMonthlybarChart(): void {
-  if (!this.monthlybarChartRef?.nativeElement) return;
+      if (this.dashboardData.stats.inProgress?.tickets) {
+        this.newTickets.push(...this.dashboardData.stats.inProgress.tickets);
+      }
+      if (this.dashboardData.stats.complete?.tickets) {
+        this.newTickets.push(...this.dashboardData.stats.complete.tickets);
+      }
 
-  const ctx = this.monthlybarChartRef.nativeElement.getContext('2d');
-  if (!ctx) return;
+      if (this.dashboardData.stats.complete?.tickets) {
+        this.completedTickets = this.dashboardData.stats.complete.tickets;
+      }
 
-  if (this.monthlybarChart) {
-    this.monthlybarChart.destroy();
-  }
+      console.log('Bar chart - จำนวนทิคเก็ตใหม่:', this.newTickets.length);
+      console.log('Bar chart - จำนวนทิคเก็ตที่เสร็จแล้ว:', this.completedTickets.length);
 
-  this.monthlybarChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [],
-      datasets: [
-        {
-          label: 'New Tickets',
-          data: [],
-          backgroundColor: 'rgba(255, 193, 7, 0.6)',
-          borderColor: '#FFC107',
-          borderWidth: 1
+      this.updateMonthlybarChart();
+    } else {
+      this.dashboardService.getMonthlyTicketStats(year, month).subscribe({
+        next: (res) => {
+          console.log('ผลตอบกลับจาก API สำหรับ bar chart:', res);
+
+          this.newTickets = [];
+          this.completedTickets = [];
+
+          if (res.data?.new?.tickets) {
+            this.newTickets.push(...res.data.new.tickets);
+          }
+          if (res.data?.inProgress?.tickets) {
+            this.newTickets.push(...res.data.inProgress.tickets);
+          }
+          if (res.data?.complete?.tickets) {
+            this.newTickets.push(...res.data.complete.tickets);
+          }
+
+          if (res.data?.complete?.tickets) {
+            this.completedTickets = res.data.complete.tickets;
+          }
+
+          console.log('API - จำนวนทิคเก็ตใหม่:', this.newTickets.length);
+          console.log('API - จำนวนทิคเก็ตที่เสร็จแล้ว:', this.completedTickets.length);
+
+          this.updateMonthlybarChart();
         },
-        {
-          label: 'Completed',
-          data: [],
-          backgroundColor: 'rgba(40, 167, 69, 0.6)',
-          borderColor: '#28A745',
-          borderWidth: 1
+        error: (err) => {
+          console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล bar chart:', err);
         }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'top', align: 'end' },
-        tooltip: {
-          callbacks: {
-            title: (tooltipItems) => `วันที่ ${tooltipItems[0].label} ${this.selectedBarMonth} ${this.selectedBarYear}`,
-            label: (context) => {
-              const label = context.dataset.label || '';
-              const value = context.parsed.y || 0;
-              return label === 'New Tickets' ? `ทิคเก็ตใหม่: ${value} รายการ` : `ทิคเก็ตที่เสร็จ: ${value} รายการ`;
+      });
+    }
+  }
+
+  private initializeMonthlybarChart(): void {
+    if (!this.monthlybarChartRef?.nativeElement) return;
+
+    const ctx = this.monthlybarChartRef.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    if (this.monthlybarChart) {
+      this.monthlybarChart.destroy();
+    }
+
+    this.monthlybarChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: this.translate('dashboard.newTickets'),
+            data: [],
+            backgroundColor: 'rgba(255, 193, 7, 0.6)',
+            borderColor: '#FFC107',
+            borderWidth: 1
+          },
+          {
+            label: this.translate('dashboard.completed'),
+            data: [],
+            backgroundColor: 'rgba(40, 167, 69, 0.6)',
+            borderColor: '#28A745',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', align: 'end' },
+          tooltip: {
+            callbacks: {
+              title: (tooltipItems) => {
+                const day = tooltipItems[0].label;
+                const monthName = this.getMonthName(this.getMonthNumber(this.selectedBarMonth));
+                return `${this.translate('dashboard.day')} ${day} ${monthName} ${this.selectedBarYear}`;
+              },
+              label: (context) => {
+                const value = context.parsed.y || 0;
+                const label = context.dataset.label || '';
+                return `${label}: ${this.formatNumber(value)} ${this.translate('dashboard.tickets')}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: this.translate('dashboard.dayLabel')
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 },
+            title: {
+              display: true,
+              text: this.translate('dashboard.ticketCountLabel')
             }
           }
         }
-      },
-      scales: {
-        x: { title: { display: true, text: 'วันที่' } },
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: 'จำนวนทิคเก็ต' } }
       }
-    }
-  });
+    });
 
-  console.log('Bar chart initialized successfully');
-}
+    console.log('Bar chart initialized successfully');
+  }
 
   private initializeCategoryChart(): void {
     if (!this.categoryChartRef?.nativeElement) return;
@@ -562,7 +681,8 @@ private loadMonthlyTicketsForBar(): void {
     const ctx = this.categoryChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    // ✅ ใช้ชื่อเดือนแบบสั้นตามภาษา
+    const months = Array.from({ length: 12 }, (_, i) => this.getMonthShortName(i + 1));
 
     this.categoryChart = new Chart(ctx, {
       type: 'line',
@@ -581,9 +701,7 @@ private loadMonthlyTicketsForBar(): void {
               boxWidth: 12,
               usePointStyle: true,
               padding: 15,
-              font: {
-                size: 11
-              }
+              font: { size: 11 }
             }
           },
           tooltip: {
@@ -596,25 +714,15 @@ private loadMonthlyTicketsForBar(): void {
         },
         scales: {
           x: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              font: {
-                size: 11
-              }
-            },
+            grid: { display: false },
+            ticks: { font: { size: 11 } }
           },
           y: {
             beginAtZero: true,
-            grid: {
-              color: 'rgba(0,0,0,0.05)'
-            },
+            grid: { color: 'rgba(0,0,0,0.05)' },
             ticks: {
               stepSize: 1,
-              font: {
-                size: 11
-              }
+              font: { size: 11 }
             }
           }
         },
@@ -653,9 +761,7 @@ private loadMonthlyTicketsForBar(): void {
         maintainAspectRatio: false,
         cutout: '60%',
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             titleColor: '#fff',
@@ -686,9 +792,7 @@ private loadMonthlyTicketsForBar(): void {
     }
 
     console.log('Updating all charts with new data...');
-    // อัพเดทเฉพาะ line chart (ไม่รวม bar chart)
     this.updateMonthlyChart();
-    // Bar chart จะอัพเดทแยกผ่าน loadMonthlyTicketsForBar()
   }
 
   private updateMonthlyChart(): void {
@@ -699,10 +803,8 @@ private loadMonthlyTicketsForBar(): void {
     const currentYear = parseInt(this.selectedYear);
     const currentMonth = this.getMonthNumber(this.selectedMonth);
 
-    // Generate daily data from tickets
     const dailyData = this.generateDailyDataFromTickets(currentYear, currentMonth);
 
-    // Update chart
     this.monthlyChart.data.labels = dailyData.labels;
     this.monthlyChart.data.datasets[0].data = dailyData.newTickets;
     this.monthlyChart.data.datasets[1].data = dailyData.completeTickets;
@@ -712,158 +814,52 @@ private loadMonthlyTicketsForBar(): void {
   }
 
   private updateMonthlybarChart(): void {
-  if (!this.monthlybarChart) return;
+    if (!this.monthlybarChart) return;
 
-  const currentYear = parseInt(this.selectedBarYear);
-  const currentMonth = this.getMonthNumber(this.selectedBarMonth); // 1-12
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); // ใช้ currentMonth โดยตรงเนื่องจาก getMonthNumber คืนค่า 1-12
-  const labels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+    const currentYear = parseInt(this.selectedBarYear);
+    const currentMonth = this.getMonthNumber(this.selectedBarMonth);
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const labels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
 
-  const newTicketsPerDay: number[] = Array(daysInMonth).fill(0);
-  const completedPerDay: number[] = Array(daysInMonth).fill(0);
+    const newTicketsPerDay: number[] = Array(daysInMonth).fill(0);
+    const completedPerDay: number[] = Array(daysInMonth).fill(0);
 
-  console.log('=== การ Debug อัปเดต Bar Chart ===');
-  console.log('ปีเป้าหมาย:', currentYear, 'เดือนเป้าหมาย:', currentMonth);
-  console.log('จำนวนวันในเดือน:', daysInMonth);
+    this.newTickets.forEach((ticket) => {
+      if (ticket.createdAt) {
+        const date = new Date(ticket.createdAt);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
 
-  console.log('=== การนับทิคเก็ตใหม่ (ที่สร้าง) ===');
-  this.newTickets.forEach((ticket, index) => {
-    if (ticket.createdAt) {
-      const date = new Date(ticket.createdAt);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1; // เดือนใน JavaScript เป็น 0-11 ดังนั้นต้องบวก 1
-      const day = date.getDate();
-
-      console.log(`ทิคเก็ตใหม่ ${index}: createdAt=${ticket.createdAt} => ปี=${year}, เดือน=${month}, วัน=${day}`);
-
-      if (year === currentYear && month === currentMonth) {
-        if (day >= 1 && day <= daysInMonth) {
-          newTicketsPerDay[day - 1] += 1;
-          console.log(`  ✅ เพิ่มในวันที่ ${day} -> newTicketsPerDay[${day - 1}] = ${newTicketsPerDay[day - 1]}`);
+        if (year === currentYear && month === currentMonth) {
+          if (day >= 1 && day <= daysInMonth) {
+            newTicketsPerDay[day - 1] += 1;
+          }
         }
-      } else {
-        console.log(`  ❌ ไม่อยู่ในเดือน/ปีเป้าหมาย (เป้าหมาย: ${currentYear}-${currentMonth})`);
       }
-    } else {
-      console.log(`ทิคเก็ตใหม่ ${index}: ไม่มีวันที่ createdAt`);
-    }
-  });
-
-  console.log('=== การนับทิคเก็ตที่เสร็จแล้ว ===');
-  this.completedTickets.forEach((ticket, index) => {
-    if (ticket.completedAt) {
-      const date = new Date(ticket.completedAt);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1; // เดือนใน JavaScript เป็น 0-11 ดังนั้นต้องบวก 1
-      const day = date.getDate();
-
-      console.log(`ทิคเก็ตที่เสร็จแล้ว ${index}: completedAt=${ticket.completedAt} => ปี=${year}, เดือน=${month}, วัน=${day}`);
-
-      if (year === currentYear && month === currentMonth) {
-        if (day >= 1 && day <= daysInMonth) {
-          completedPerDay[day - 1] += 1;
-          console.log(`  ✅ เพิ่มในวันที่ ${day} -> completedPerDay[${day - 1}] = ${completedPerDay[day - 1]}`);
-        }
-      } else {
-        console.log(`  ❌ ไม่อยู่ในเดือน/ปีเป้าหมาย (เป้าหมาย: ${currentYear}-${currentMonth})`);
-      }
-    } else {
-      console.log(`ทิคเก็ตที่เสร็จแล้ว ${index}: ไม่มีวันที่ completedAt`);
-    }
-  });
-
-  console.log('=== ผลลัพธ์สุดท้ายของ bar chart ===');
-  console.log('ทิคเก็ตใหม่ตามวัน:', newTicketsPerDay);
-  console.log('ทิคเก็ตที่เสร็จแล้วตามวัน:', completedPerDay);
-  console.log('รวมทิคเก็ตใหม่:', newTicketsPerDay.reduce((sum, count) => sum + count, 0));
-  console.log('รวมทิคเก็ตที่เสร็จแล้ว:', completedPerDay.reduce((sum, count) => sum + count, 0));
-
-  // อัปเดตชาร์ต
-  this.monthlybarChart.data.labels = labels;
-  this.monthlybarChart.data.datasets[0].data = newTicketsPerDay;
-  this.monthlybarChart.data.datasets[1].data = completedPerDay;
-  this.monthlybarChart.update('active');
-
-  console.log('อัปเดต Bar chart สำเร็จแล้ว');
-}
-
-  private updatePieChart(): void {
-    if (!this.pieChart || !this.dashboardData.stats) return;
-
-    console.log('Updating pie chart with dashboard stats data...');
-
-    // Create categories with percentages from dashboard stats
-    const total = this.dashboardData.stats.total || 1; // Prevent division by zero
-    const categories = [
-      {
-        category: 'ใหม่',
-        count: this.getNewCount(),
-        color: '#38a169',
-        percentage: (this.getNewCount() / total) * 100
-      },
-      {
-        category: 'กำลังดำเนินการ',
-        count: this.getInProgressCount(),
-        color: '#d69e2e',
-        percentage: (this.getInProgressCount() / total) * 100
-      },
-      {
-        category: 'เสร็จแล้ว',
-        count: this.getCompleteCount(),
-        color: '#9f7aea',
-        percentage: (this.getCompleteCount() / total) * 100
-      }
-    ].filter(cat => cat.count > 0); // Only show categories with data
-
-    const labels = categories.map(item => item.category);
-    const percentages = categories.map(item => item.percentage);
-    const colors = categories.map(item => item.color);
-
-    this.pieChart.data.labels = labels;
-    this.pieChart.data.datasets[0].data = percentages;
-    this.pieChart.data.datasets[0].backgroundColor = colors;
-
-    this.pieChart.update('active');
-    console.log('Pie chart updated successfully with dashboard stats');
-  }
-
-  private updatePieChartWithCategoryData(): void {
-    if (!this.pieChart || !this.dashboardData.categoryStats || this.dashboardData.categoryStats.length === 0) return;
-
-    console.log('Updating pie chart with backend category data...');
-
-    // Calculate total from backend category data
-    const totalTickets = this.dashboardData.categoryStats.reduce((sum, cat) => sum + (cat.count || 0), 0);
-
-    if (totalTickets === 0) {
-      console.warn('No tickets found in category data');
-      return;
-    }
-
-    // Create categories with percentages from backend data
-    const categories = this.dashboardData.categoryStats
-      .filter(cat => (cat.count || 0) > 0) // Only categories with tickets
-      .map(cat => ({
-        category: cat.category || cat.category || 'Unknown',
-        count: cat.count || 0,
-        color: this.getCategoryColor(cat.category || cat.category),
-        percentage: ((cat.count || 0) / totalTickets) * 100
-      }));
-
-    const labels = categories.map(item => item.category);
-    const percentages = categories.map(item => item.percentage);
-    const colors = categories.map(item => item.color);
-
-    this.pieChart.data.labels = labels;
-    this.pieChart.data.datasets[0].data = percentages;
-    this.pieChart.data.datasets[0].backgroundColor = colors;
-
-    this.pieChart.update('active');
-    console.log('Pie chart updated successfully with backend category data:', {
-      totalTickets,
-      categoriesCount: categories.length,
-      categories: categories.map(c => ({ name: c.category, count: c.count, percentage: c.percentage.toFixed(1) + '%' }))
     });
+
+    this.completedTickets.forEach((ticket) => {
+      if (ticket.completedAt) {
+        const date = new Date(ticket.completedAt);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
+        if (year === currentYear && month === currentMonth) {
+          if (day >= 1 && day <= daysInMonth) {
+            completedPerDay[day - 1] += 1;
+          }
+        }
+      }
+    });
+
+    this.monthlybarChart.data.labels = labels;
+    this.monthlybarChart.data.datasets[0].data = newTicketsPerDay;
+    this.monthlybarChart.data.datasets[1].data = completedPerDay;
+    this.monthlybarChart.update('active');
+
+    console.log('อัพเดต Bar chart สำเร็จแล้ว');
   }
 
   // =============================================================================
@@ -880,96 +876,56 @@ private loadMonthlyTicketsForBar(): void {
     const newTicketsCount: number[] = [];
     const completeTicketsCount: number[] = [];
 
-    // Create labels for each day
     for (let day = 1; day <= daysInMonth; day++) {
       labels.push(day.toString());
       newTicketsCount[day - 1] = 0;
       completeTicketsCount[day - 1] = 0;
     }
 
-    // ✅ รวม tickets จากทุก status เพื่อนับ new tickets ที่สร้างในแต่ละวัน
     const allTickets: any[] = [];
 
-    // รวม tickets จาก new status
     if (this.dashboardData.stats?.new) {
       const newTickets = this.extractTicketsArray(this.dashboardData.stats.new);
       allTickets.push(...newTickets);
     }
 
-    // รวม tickets จาก inProgress status  
     if (this.dashboardData.stats?.inProgress) {
       const inProgressTickets = this.extractTicketsArray(this.dashboardData.stats.inProgress);
       allTickets.push(...inProgressTickets);
     }
 
-    // รวม tickets จาก complete status
     if (this.dashboardData.stats?.complete) {
       const completeTickets = this.extractTicketsArray(this.dashboardData.stats.complete);
       allTickets.push(...completeTickets);
     }
 
-    console.log('=== DEBUG: All tickets for new count ===');
-    console.log('Total tickets from all statuses:', allTickets.length);
-    console.log('New status tickets:', this.dashboardData.stats?.new ? this.extractTicketsArray(this.dashboardData.stats.new).length : 0);
-    console.log('InProgress status tickets:', this.dashboardData.stats?.inProgress ? this.extractTicketsArray(this.dashboardData.stats.inProgress).length : 0);
-    console.log('Complete status tickets:', this.dashboardData.stats?.complete ? this.extractTicketsArray(this.dashboardData.stats.complete).length : 0);
-
-    // นับ new tickets จากทุก status ตามวันที่สร้าง
-    allTickets.forEach((ticket, index) => {
-      if (!ticket.createdAt) {
-        console.warn(`Ticket ${index + 1} has no createdAt date`);
-        return;
-      }
+    allTickets.forEach((ticket) => {
+      if (!ticket.createdAt) return;
 
       const createdDate = new Date(ticket.createdAt);
       if (createdDate.getFullYear() === year && createdDate.getMonth() + 1 === month) {
         const day = createdDate.getDate();
         if (day >= 1 && day <= daysInMonth) {
           newTicketsCount[day - 1]++;
-          console.log(`Adding new ticket to day ${day}, total now: ${newTicketsCount[day - 1]}`);
         }
       }
     });
 
-    // นับ complete tickets เฉพาะจาก complete status ตามวันที่สร้าง
     if (this.dashboardData.stats?.complete) {
       const completeTickets = this.extractTicketsArray(this.dashboardData.stats.complete);
 
-      completeTickets.forEach((ticket, index) => {
-        if (!ticket.createdAt) {
-          console.warn(`Complete ticket ${index + 1} has no createdAt date`);
-          return;
-        }
+      completeTickets.forEach((ticket) => {
+        if (!ticket.createdAt) return;
 
         const createdDate = new Date(ticket.createdAt);
         if (createdDate.getFullYear() === year && createdDate.getMonth() + 1 === month) {
           const day = createdDate.getDate();
           if (day >= 1 && day <= daysInMonth) {
             completeTicketsCount[day - 1]++;
-            console.log(`Adding complete ticket to day ${day}, total now: ${completeTicketsCount[day - 1]}`);
           }
         }
       });
     }
-
-    console.log('=== FINAL RESULTS ===');
-    console.log('New tickets by day:', newTicketsCount);
-    console.log('Complete tickets by day:', completeTicketsCount);
-    console.log('Total new tickets:', newTicketsCount.reduce((sum, count) => sum + count, 0));
-    console.log('Total complete tickets:', completeTicketsCount.reduce((sum, count) => sum + count, 0));
-
-    // แสดงข้อมูลที่ไม่เป็น 0
-    newTicketsCount.forEach((count, index) => {
-      if (count > 0) {
-        console.log(`Day ${index + 1}: ${count} new tickets`);
-      }
-    });
-
-    completeTicketsCount.forEach((count, index) => {
-      if (count > 0) {
-        console.log(`Day ${index + 1}: ${count} complete tickets`);
-      }
-    });
 
     return {
       labels,
@@ -978,89 +934,13 @@ private loadMonthlyTicketsForBar(): void {
     };
   }
 
-  private generateMonthlyDataFromCategories(categories: any[]): number[][] {
-    const months = 12;
-    return categories.map(category => {
-      const baseValue = Math.max(1, category.count / 12);
-      return Array.from({ length: months }, () => {
-        const variation = 0.3;
-        const randomFactor = 1 + (Math.random() - 0.5) * variation;
-        return Math.round(baseValue * randomFactor);
-      });
-    });
-  }
-
-  private generateMonthlyTrendFromCategories(categories: any[]): number[][] {
-    const months = 12;
-    return categories.map(category => {
-      // Use actual count to generate realistic monthly trend
-      const baseValue = Math.max(0, category.count / 6); // Spread across 6 months for trend
-      const trendData: number[] = [];
-
-      for (let month = 0; month < months; month++) {
-        // Create a trend pattern with some randomness
-        const trendFactor = 0.5 + (month / months) * 0.8; // Gradual increase trend
-        const randomVariation = 0.8 + Math.random() * 0.4; // 20% variation
-        const value = Math.round(baseValue * trendFactor * randomVariation);
-        trendData.push(Math.max(0, value));
-      }
-
-      return trendData;
-    });
-  }
-
-  private getCategoryColor(categoryName: string): string {
-    // Define colors for different categories
-    const colorMap: { [key: string]: string } = {
-      // Thai categories
-      'ระบบล่ม/ใช้งานไม่ได้': '#e53e3e',
-      'ระบบช้า': '#dd6b20',
-      'ขอข้อมูล': '#38a169',
-      'ขอแก้ไข': '#3182ce',
-      'ขอเพิ่มฟีเจอร์': '#805ad5',
-      'อื่นๆ': '#718096',
-      // English categories
-      'System Down': '#e53e3e',
-      'Performance': '#dd6b20',
-      'Data Request': '#38a169',
-      'Modification': '#3182ce',
-      'Feature Request': '#805ad5',
-      'Others': '#718096',
-      // Status categories
-      'ใหม่': '#38a169',
-      'กำลังดำเนินการ': '#d69e2e',
-      'เสร็จแล้ว': '#9f7aea',
-      'New': '#38a169',
-      'In Progress': '#d69e2e',
-      'Complete': '#9f7aea'
-    };
-
-    return colorMap[categoryName] || this.generateColorFromString(categoryName);
-  }
-
-  private generateColorFromString(str: string): string {
-    // Generate consistent color from string
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    const colors = ['#e53e3e', '#dd6b20', '#38a169', '#3182ce', '#805ad5', '#d53f8c', '#00a3c4', '#319795'];
-    return colors[Math.abs(hash) % colors.length];
-  }
-
   private extractTicketsArray(data: any): TicketSummary[] {
-    // If object with tickets array
     if (data && typeof data === 'object' && 'tickets' in data && Array.isArray(data.tickets)) {
       return data.tickets;
     }
-
-    // If direct array
     if (Array.isArray(data)) {
       return data;
     }
-
-    // If no data
     return [];
   }
 
@@ -1128,6 +1008,22 @@ private loadMonthlyTicketsForBar(): void {
     return 0;
   }
 
+  /**
+ * ✅ แปลงชื่อเดือนภาษาอังกฤษเป็นชื่อตามภาษาปัจจุบัน
+ */
+  getDisplayMonthName(englishMonthName: string): string {
+    const monthMap: { [key: string]: number } = {
+      'January': 1, 'February': 2, 'March': 3, 'April': 4,
+      'May': 5, 'June': 6, 'July': 7, 'August': 8,
+      'September': 9, 'October': 10, 'November': 11, 'December': 12
+    };
+
+    const monthIndex = monthMap[englishMonthName];
+    if (!monthIndex) return englishMonthName;
+
+    return this.getMonthName(monthIndex);
+  }
+
   private getMonthNumber(monthName: string): number {
     const months: { [key: string]: number } = {
       'January': 1, 'February': 2, 'March': 3, 'April': 4,
@@ -1135,23 +1031,14 @@ private loadMonthlyTicketsForBar(): void {
       'September': 9, 'October': 10, 'November': 11, 'December': 12
     };
 
-    const result = months[monthName] || 5; // default เป็น June
-    console.log(`getMonthNumber('${monthName}') = ${result}`);
+    const result = months[monthName] || 5;
     return result;
-  }
-
-  private addAlphaToColor(hex: string, alpha: number): string {
-    if (!hex.startsWith('#')) return `rgba(0, 0, 0, ${alpha})`;
-
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   // =============================================================================
   // FILTER METHODS
   // =============================================================================
+
   selectYear(year: string): void {
     this.selectedYear = year;
     console.log(`Line chart year changed to: ${year}`);
@@ -1164,7 +1051,6 @@ private loadMonthlyTicketsForBar(): void {
     this.updateMonthlyChart();
   }
 
-  // Bar Chart Filters
   selectBarYear(year: string): void {
     this.selectedBarYear = year;
     console.log(`Bar chart year changed to: ${year}`);
@@ -1177,7 +1063,6 @@ private loadMonthlyTicketsForBar(): void {
     this.loadMonthlyTicketsForBar();
   }
 
-  // Category Chart Filters (เดิม)
   selectCategoryYear(year: string): void {
     this.selectedCategoryYear = year;
     console.log(`Category year changed to: ${year}`);
@@ -1207,9 +1092,29 @@ private loadMonthlyTicketsForBar(): void {
     return this.dashboardStats !== null;
   }
 
+  /**
+   * ✅ Format number ตามภาษาปัจจุบัน
+   */
   formatNumber(num: number): string {
     if (!num) return '0';
-    return num.toLocaleString('th-TH');
+    return this.languageService.formatNumber(num);
+  }
+
+  /**
+   * ✅ Format date ตามภาษาปัจจุบัน
+   */
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return this.languageService.formatDate(date, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'N/A';
+    }
   }
 
   calculatePercentageChange(current: number, previous: number): number {
@@ -1258,24 +1163,7 @@ private loadMonthlyTicketsForBar(): void {
   }
 
   getStatusText(statusId: number): string {
-    switch (statusId) {
-      case 1: return 'Pending';
-      case 2: return 'In Progress';
-      case 3: return 'Hold';
-      case 4: return 'Resolved';
-      case 5: return 'Complete';
-      case 6: return 'Cancel';
-      default: return 'Unknown';
-    }
-  }
-
-  formatDate(dateString: string): string {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('th-TH');
-    } catch {
-      return 'N/A';
-    }
+    return this.getStatusName(statusId);
   }
 
   logout(): void {

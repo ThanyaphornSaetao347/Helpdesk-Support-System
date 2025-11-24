@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../../shared/services/auth.service';
+import { LanguageService } from '../../../shared/services/language.service';
+import { LanguageSelectorComponent } from '../../../shared/components/language-selector/language-selector.component';
 
-// ✅ Import interfaces จาก user.model.ts ใหม่
+// ✅ Import interfaces จาก user.model.ts
 import { 
   LoginFormData, 
   LoginResponse, 
@@ -17,12 +19,17 @@ import {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    LanguageSelectorComponent // ✅ เพิ่ม Language Selector Component
+  ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
+  private languageService = inject(LanguageService); // ✅ เพิ่ม Language Service
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -41,6 +48,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     console.log('🔧 Login component initialized');
+    this.setupLanguageService(); // ✅ Setup language service
     this.setupInitialState();
     this.checkExistingAuth();
   }
@@ -48,6 +56,29 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // ✅ ป้องกัน memory leaks
     this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  // ===== LANGUAGE SERVICE SETUP ===== ✅
+
+  /**
+   * ✅ ตั้งค่า Language Service และ subscribe to changes
+   */
+  private setupLanguageService(): void {
+    // Subscribe to language changes
+    const langSub = this.languageService.currentLanguage$.subscribe(lang => {
+      this.currentLanguage = lang;
+      console.log('🌐 Language changed in login:', lang);
+    });
+    
+    this.subscriptions.push(langSub);
+  }
+
+  /**
+   * ✅ Handle language change event from selector
+   */
+  onLanguageChanged(language: string): void {
+    console.log('🌐 Language changed via selector:', language);
+    // Language service จะจัดการเอง ไม่ต้องทำอะไรเพิ่ม
   }
 
   // ===== INITIALIZATION METHODS ===== ✅
@@ -59,13 +90,6 @@ export class LoginComponent implements OnInit, OnDestroy {
     // ✅ ดึง returnUrl จาก query parameters
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
     console.log('🎯 Return URL set to:', this.returnUrl);
-
-    // ✅ โหลดภาษาที่บันทึกไว้
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && ['th', 'en'].includes(savedLanguage)) {
-      this.currentLanguage = savedLanguage;
-      console.log('🌍 Language loaded:', this.currentLanguage);
-    }
 
     // ✅ โหลด remember me state
     const rememberMe = localStorage.getItem('remember_me');
@@ -157,10 +181,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     } else {
       // ✅ Login ไม่สำเร็จ
       console.log('❌ Login failed:', response.message);
-      this.errorMessage = response.message || this.getLanguageText(
-        'เข้าสู่ระบบไม่สำเร็จ', 
-        'Login failed'
-      );
+      this.errorMessage = response.message || this.translate('login.loginFailed');
     }
   }
 
@@ -197,14 +218,11 @@ export class LoginComponent implements OnInit, OnDestroy {
       // ✅ ตรวจสอบ authentication อีกครั้ง
       if (!this.authService.isAuthenticated()) {
         console.error('❌ Authentication check failed after login');
-        this.errorMessage = this.getLanguageText(
-          'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', 
-          'Authentication error occurred'
-        );
+        this.errorMessage = this.translate('login.connectionError');
         return;
       }
 
-      console.log('🔑 Auth check passed, navigating...');
+      console.log('🔒 Auth check passed, navigating...');
       
       // ✅ พยายาม navigate ไปยัง returnUrl
       const navigationResult = await this.router.navigate([this.returnUrl]);
@@ -256,10 +274,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     } else if (error?.error?.message) {
       errorMessage = error.error.message;
     } else {
-      errorMessage = this.getLanguageText(
-        'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
-        'An error occurred. Please try again.'
-      );
+      errorMessage = this.translate('login.connectionError');
     }
 
     this.errorMessage = errorMessage;
@@ -276,25 +291,19 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     // ✅ ตรวจสอบ username
     if (!this.loginData.username || this.loginData.username.trim().length === 0) {
-      this.errorMessage = this.getLanguageText(
-        'กรุณากรอกชื่อผู้ใช้งาน',
-        'Please enter username'
-      );
+      this.errorMessage = this.translate('login.fillAllFields');
       return false;
     }
 
     // ✅ ตรวจสอบ password
     if (!this.loginData.password || this.loginData.password.length === 0) {
-      this.errorMessage = this.getLanguageText(
-        'กรุณากรอกรหัสผ่าน',
-        'Please enter password'
-      );
+      this.errorMessage = this.translate('login.fillAllFields');
       return false;
     }
 
     // ✅ ตรวจสอบความยาว username
     if (this.loginData.username.trim().length < 3) {
-      this.errorMessage = this.getLanguageText(
+      this.errorMessage = this.getText(
         'ชื่อผู้ใช้งานต้องมีอย่างน้อย 3 ตัวอักษร',
         'Username must be at least 3 characters'
       );
@@ -303,7 +312,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     // ✅ ตรวจสอบความยาว password
     if (this.loginData.password.length < 4) {
-      this.errorMessage = this.getLanguageText(
+      this.errorMessage = this.getText(
         'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร',
         'Password must be at least 4 characters'
       );
@@ -339,24 +348,41 @@ export class LoginComponent implements OnInit, OnDestroy {
     console.log('👁️ Password visibility toggled:', this.showPassword);
   }
 
-  // ===== LANGUAGE MANAGEMENT ===== ✅
+  // ===== LANGUAGE METHODS ===== ✅
 
   /**
-   * ✅ เปลี่ยนภาษา
+   * ✅ แปลภาษาจาก translation key
    */
-  switchLanguage(lang: string): void {
-    if (['th', 'en'].includes(lang)) {
-      this.currentLanguage = lang;
-      localStorage.setItem('language', lang);
-      console.log('🌍 Language switched to:', lang);
-    }
+  translate(key: string, params?: { [key: string]: any }): string {
+    return this.languageService.translate(key, params);
   }
 
   /**
-   * ✅ ดึงข้อความตามภาษา
+   * ✅ ดึงข้อความตามภาษาปัจจุบัน
    */
-  getLanguageText(thText: string, enText: string): string {
-    return this.currentLanguage === 'th' ? thText : enText;
+  getText(thText: string, enText: string): string {
+    return this.languageService.getText(thText, enText);
+  }
+
+  /**
+   * ✅ สลับภาษา (ใช้ได้ถ้าไม่มี Language Selector Component)
+   */
+  switchLanguage(lang: string): void {
+    this.languageService.setLanguage(lang as 'th' | 'en');
+  }
+
+  /**
+   * ✅ ดึง flag ของภาษาปัจจุบัน
+   */
+  getCurrentFlag(): string {
+    return this.languageService.getCurrentFlag();
+  }
+
+  /**
+   * ✅ ดึงชื่อภาษาปัจจุบัน
+   */
+  getCurrentLanguageName(): string {
+    return this.languageService.getCurrentLanguageName();
   }
 
   // ===== UTILITY METHODS ===== ✅
@@ -422,6 +448,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
     console.log('✅ Form Valid:', this.isFormValid());
     console.log('🔐 Auth Status:', this.authService.isAuthenticated());
+    console.log('🌐 Language Service:', this.languageService.getDebugInfo());
     console.groupEnd();
   }
 
@@ -444,7 +471,7 @@ export class LoginComponent implements OnInit, OnDestroy {
    * ✅ ดึง aria-label สำหรับ password toggle
    */
   getPasswordToggleAriaLabel(): string {
-    return this.getLanguageText(
+    return this.getText(
       this.showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน',
       this.showPassword ? 'Hide password' : 'Show password'
     );
