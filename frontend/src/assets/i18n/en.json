@@ -278,5 +278,22 @@
     "lastMonth": "Last Month",
     "thisYear": "This Year",
     "custom": "Custom Range"
+  },
+  "ticketDetail": {
+    "title": "Ticket Detail",
+    "ticketId": "Ticket ID",
+    "reporter": "Reporter",
+    "created": "Created",
+    "updated": "Last Updated",
+    "history": "History",
+    "evaluation": "Evaluation",
+    "evaluationMessage": "Please rate your satisfaction",
+    "exportPdf": "Export PDF",
+    "loadingHistory": "Loading history...",
+    "noHistory": "No history available",
+    "backToAll": "Back to All Tickets",
+    "editTooltip": "Edit this ticket",
+    "deleteTooltip": "Delete this ticket",
+    "deleteSuccess": "Ticket deleted successfully"
   }
 }

@@ -41,18 +41,10 @@
 }
 
 @keyframes bellRing {
-  0%, 100% {
-    transform: rotate(0deg);
-  }
-  10%, 30% {
-    transform: rotate(-10deg);
-  }
-  20%, 40% {
-    transform: rotate(10deg);
-  }
-  50% {
-    transform: rotate(0deg);
-  }
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-10deg); }
+  20%, 40% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
 }
 
 /* ===== BADGE ===== */
@@ -76,12 +68,8 @@
 }
 
 @keyframes badgePulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 /* ===== DROPDOWN MENU ===== */
@@ -259,6 +247,18 @@
   font-size: 32px;
 }
 
+.error-message {
+  color: #2d3436;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.error-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* ===== NOTIFICATION LIST ===== */
 .notification-list {
   flex: 1;
@@ -266,23 +266,10 @@
   max-height: 400px;
 }
 
-/* Custom Scrollbar */
-.notification-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.notification-list::-webkit-scrollbar-track {
-  background: #f8f9fa;
-}
-
-.notification-list::-webkit-scrollbar-thumb {
-  background: #dee2e6;
-  border-radius: 3px;
-}
-
-.notification-list::-webkit-scrollbar-thumb:hover {
-  background: #ced4da;
-}
+.notification-list::-webkit-scrollbar { width: 6px; }
+.notification-list::-webkit-scrollbar-track { background: #f8f9fa; }
+.notification-list::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 3px; }
+.notification-list::-webkit-scrollbar-thumb:hover { background: #ced4da; }
 
 /* ===== EMPTY STATE ===== */
 .notification-empty {
@@ -304,12 +291,6 @@
   margin-bottom: 8px;
 }
 
-.empty-subtext {
-  font-size: 14px;
-  color: #6c757d;
-  margin: 0;
-}
-
 /* ===== NOTIFICATION ITEM ===== */
 .notification-item {
   display: flex;
@@ -321,13 +302,8 @@
   position: relative;
 }
 
-.notification-item:hover {
-  background: #f8f9fa;
-}
-
-.notification-item:active {
-  background: #e9ecef;
-}
+.notification-item:hover { background: #f8f9fa; }
+.notification-item:active { background: #e9ecef; }
 
 .notification-item.unread {
   background: rgba(108, 92, 231, 0.03);
@@ -354,15 +330,10 @@
   color: white;
 }
 
-.notification-icon i {
-  font-size: 18px;
-}
+.notification-icon i { font-size: 18px; }
 
 /* ===== NOTIFICATION CONTENT ===== */
-.notification-content {
-  flex: 1;
-  min-width: 0;
-}
+.notification-content { flex: 1; min-width: 0; }
 
 .notification-title-row {
   display: flex;
@@ -403,14 +374,7 @@
   gap: 4px;
 }
 
-.meta-item i {
-  font-size: 11px;
-}
-
-.meta-type {
-  color: #6c5ce7;
-  font-weight: 500;
-}
+.meta-item i { font-size: 11px; }
 
 /* ===== NOTIFICATION ACTIONS ===== */
 .notification-actions {
@@ -421,9 +385,7 @@
   transition: opacity 0.2s ease;
 }
 
-.notification-item:hover .notification-actions {
-  opacity: 1;
-}
+.notification-item:hover .notification-actions { opacity: 1; }
 
 .btn-icon-tiny {
   width: 24px;
@@ -451,9 +413,7 @@
   border-color: #e17055;
 }
 
-.btn-icon-tiny i {
-  font-size: 12px;
-}
+.btn-icon-tiny i { font-size: 12px; }
 
 /* ===== BADGES ===== */
 .badge-sm {
@@ -461,26 +421,10 @@
   padding: 2px 6px;
   border-radius: 4px;
 }
-
-.badge-success {
-  background-color: #00b894;
-  color: white;
-}
-
-.badge-info {
-  background-color: #74b9ff;
-  color: white;
-}
-
-.badge-warning {
-  background-color: #fdcb6e;
-  color: #2d3436;
-}
-
-.badge-danger {
-  background-color: #e17055;
-  color: white;
-}
+.badge-success { background-color: #00b894; color: white; }
+.badge-info { background-color: #74b9ff; color: white; }
+.badge-warning { background-color: #fdcb6e; color: #2d3436; }
+.badge-danger { background-color: #e17055; color: white; }
 
 /* ===== FOOTER ===== */
 .notification-footer {
@@ -495,13 +439,8 @@
   padding: 12px;
 }
 
-.notification-footer .btn:first-child {
-  border-bottom: 1px solid #e9ecef;
-}
-
-.notification-footer .btn:hover {
-  background: white;
-}
+.notification-footer .btn:first-child { border-bottom: 1px solid #e9ecef; }
+.notification-footer .btn:hover { background: white; }
 
 /* ===== BACKDROP ===== */
 .notification-backdrop {
@@ -517,10 +456,22 @@
   z-index: 1040;
 }
 
-.notification-backdrop.show {
-  opacity: 1;
-  visibility: visible;
+.notification-backdrop.show { opacity: 1; visibility: visible; }
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+.notification-item { animation: slideIn 0.3s ease; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animation { animation: spin 1s linear infinite; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 576px) {
@@ -531,199 +482,12 @@
     border-radius: 12px 12px 0 0;
   }
 
-  .notification-list {
-    max-height: 50vh;
-  }
-}
-
-/* ===== ANIMATIONS ===== */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.notification-item {
-  animation: slideIn 0.3s ease;
-}
-
-/* ===== DEBUG PANEL ===== */
-.debug-panel {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-}
-
-/* ===== ADDITIONAL CSS FOR IMPROVED VERSION ===== */
-/* เพิ่มในไฟล์ notification-bell.component.css */
-
-/* ===== CONNECTION STATUS INDICATOR ===== */
-.connection-status {
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-  margin-top: 4px;
-}
-
-.connection-status i {
-  font-size: 8px;
-}
-
-.connection-status.connected {
-  color: #00b894;
-  background: rgba(0, 184, 148, 0.1);
-}
-
-.connection-status.connected i {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.connection-status.connecting {
-  color: #fdcb6e;
-  background: rgba(253, 203, 110, 0.1);
-}
-
-.connection-status.connecting i {
-  animation: spin 1s linear infinite;
-}
-
-.connection-status.disconnected {
-  color: #e17055;
-  background: rgba(225, 112, 85, 0.1);
-}
-
-/* ===== SPIN ANIMATION FOR LOADING ===== */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-/* ===== PULSE ANIMATION ===== */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* ===== IMPROVED ERROR STATE ===== */
-.notification-error {
-  padding: 40px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
-}
-
-.notification-error i {
-  font-size: 32px;
-  color: #e17055;
-}
-
-.error-message {
-  color: #2d3436;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.error-sub-message {
-  color: #6c757d;
-  font-size: 12px;
-  font-style: italic;
-}
-
-.error-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.error-actions .btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ===== LOADING INDICATOR IMPROVEMENTS ===== */
-.notification-loading {
-  padding: 40px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #6c757d;
-}
-
-/* ===== REFRESH BUTTON DISABLED STATE ===== */
-.btn-icon-small:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.btn-icon-small:disabled:hover {
-  background: white;
-  border-color: #e9ecef;
-  color: #6c757d;
-  transform: none;
-}
-
-/* ===== SMOOTH TRANSITIONS ===== */
-.notification-dropdown {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.notification-item {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
-.btn-icon-small:focus,
-.btn-icon-tiny:focus,
-.filter-tab:focus {
-  outline: 2px solid #6c5ce7;
-  outline-offset: 2px;
-}
-
-/* ===== RESPONSIVE IMPROVEMENTS ===== */
-@media (max-width: 576px) {
-  .connection-status {
-    font-size: 10px;
-  }
-  
-  .error-message {
-    font-size: 13px;
-  }
+  .notification-list { max-height: 50vh; }
   
   .error-actions {
     flex-direction: column;
     width: 100%;
   }
   
-  .error-actions .btn {
-    width: 100%;
-  }
+  .error-actions .btn { width: 100%; }
 }

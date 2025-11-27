@@ -1,5 +1,4 @@
 <div class="new-ticket-page">
-  <!-- Breadcrumb -->
   <div class="breadcrumb-container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -11,28 +10,24 @@
     </nav>
   </div>
 
-  <!-- Page Title -->
   <div class="page-header">
     <h1 class="page-title">{{ getPageTitle() }}</h1>
-    <!-- แสดง ticket number ในโหมดแก้ไข -->
     <div *ngIf="isEditMode && ticket_no" class="edit-ticket-info">
       <span class="ticket-number-badge">{{ ticket_no }}</span>
     </div>
   </div>
 
-  <!-- Main Content -->
   <div class="content-card" [class.ticket-created]="isTicketCreated" [class.edit-mode]="isEditMode">
-    <!-- Progress Bar -->
     <div class="form-progress" [style.width.%]="isTicketCreated ? 100 : 0"></div>
 
     <form [formGroup]="ticketForm" (ngSubmit)="onSubmit()" class="ticket-form" [class.success]="isTicketCreated">
 
-      <!-- Hidden Fields สำหรับเก็บ ticket_id และ ticket_no -->
       <input type="hidden" id="ticket_id" [value]="ticketId || ''" />
       <input type="hidden" id="ticket_no" [value]="ticket_no" />
       <input type="hidden" id="is_edit_mode" [value]="isEditMode" />
 
-      <!-- Project Dropdown -->
+      <input type="file" #richImgInput style="display: none" (change)="onRichTextConfigImage($event)" accept="image/*">
+
       <app-project-dropdown 
         [label]="t('tickets.projectName')" 
         [placeholder]="'-- ' + t('tickets.selectProject') + ' --'" 
@@ -42,7 +37,6 @@
         (selectionChange)="onProjectChange($event)">
       </app-project-dropdown>
 
-      <!-- Category Dropdown -->
       <app-category-dropdown 
         [label]="t('tickets.categories')" 
         [placeholder]="'-- ' + t('tickets.selectCategory') + ' --'" 
@@ -52,26 +46,22 @@
         (selectionChange)="onCategoryChange($event)">
       </app-category-dropdown>
 
-      <!-- Issue Description -->
       <div class="form-group">
         <label class="form-label">
           <span>{{ t('tickets.issue') }}</span>
           <span class="required">*</span>
         </label>
 
-        <!-- Rich Text Editor Container -->
         <div class="rich-text-editor-container" [class.invalid]="isFieldInvalid('issueDescription')"
           [class.success]="isTicketCreated">
-          <!-- Rich Text Editor Toolbar -->
+          
           <div class="editor-toolbar">
             <div class="toolbar-section">
-              <!-- Font formatting -->
               <select class="font-select">
                 <option>Noto Sans Thai</option>
                 <option>Arial</option>
                 <option>Times New Roman</option>
               </select>
-
               <select class="size-select">
                 <option>14</option>
                 <option>12</option>
@@ -83,8 +73,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <!-- Image upload button -->
-              <button type="button" class="toolbar-btn" (click)="insertImage()" [title]="t('common.upload')">
+              <button type="button" class="toolbar-btn" (click)="richImgInput.click()" [title]="t('common.upload')">
                 <i class="bi bi-image"></i>
               </button>
             </div>
@@ -92,8 +81,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <!-- Text formatting buttons -->
-              <button type="button" class="toolbar-btn" (click)="formatText('bold')" title="Bold">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.bold" (click)="formatText('bold')" title="Bold">
                 <i class="bi bi-type-bold"></i>
               </button>
             </div>
@@ -101,7 +89,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <button type="button" class="toolbar-btn" (click)="formatText('italic')" title="Italic">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.italic" (click)="formatText('italic')" title="Italic">
                 <i class="bi bi-type-italic"></i>
               </button>
             </div>
@@ -109,7 +97,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <button type="button" class="toolbar-btn" (click)="formatText('underline')" title="Underline">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.underline" (click)="formatText('underline')" title="Underline">
                 <i class="bi bi-type-underline"></i>
               </button>
             </div>
@@ -117,8 +105,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <!-- Alignment buttons -->
-              <button type="button" class="toolbar-btn active" (click)="formatText('justifyLeft')" title="Align Left">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyLeft" (click)="formatText('justifyLeft')" title="Align Left">
                 <i class="bi bi-text-left"></i>
               </button>
             </div>
@@ -126,7 +113,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <button type="button" class="toolbar-btn" (click)="formatText('justifyCenter')" title="Align Center">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyCenter" (click)="formatText('justifyCenter')" title="Align Center">
                 <i class="bi bi-text-center"></i>
               </button>
             </div>
@@ -134,7 +121,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <button type="button" class="toolbar-btn" (click)="formatText('justifyRight')" title="Align Right">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyRight" (click)="formatText('justifyRight')" title="Align Right">
                 <i class="bi bi-text-right"></i>
               </button>
             </div>
@@ -142,7 +129,7 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <button type="button" class="toolbar-btn" (click)="formatText('justifyFull')" title="Justify">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyFull" (click)="formatText('justifyFull')" title="Justify">
                 <i class="bi bi-justify"></i>
               </button>
             </div>
@@ -150,12 +137,11 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <!-- List buttons -->
-              <button type="button" class="toolbar-btn" (click)="insertList(false)" title="Bullet List">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.insertUnorderedList" (click)="insertList(false)" title="Bullet List">
                 <i class="bi bi-list-ul"></i>
               </button>
 
-              <button type="button" class="toolbar-btn" (click)="insertList(true)" title="Numbered List">
+              <button type="button" class="toolbar-btn" [class.active]="toolbarState.insertOrderedList" (click)="insertList(true)" title="Numbered List">
                 <i class="bi bi-list-ol"></i>
               </button>
             </div>
@@ -163,22 +149,25 @@
             <div class="toolbar-separator"></div>
 
             <div class="toolbar-section">
-              <!-- Link button -->
               <button type="button" class="toolbar-btn" (click)="insertLink()" title="Insert Link">
                 <i class="bi bi-link-45deg"></i>
               </button>
             </div>
           </div>
 
-          <!-- Rich Text Editor Content -->
-          <div class="rich-editor" [class.invalid]="isFieldInvalid('issueDescription')"
-            [class.success]="isTicketCreated" contenteditable="true" (input)="onDescriptionInput($event)"
-            [attr.placeholder]="t('tickets.issueDescriptionPlaceholder')">
+          <div class="rich-editor" 
+               [class.invalid]="isFieldInvalid('issueDescription')"
+               [class.success]="isTicketCreated" 
+               contenteditable="true" 
+               (input)="onDescriptionInput($event)"
+               (click)="onEditorEvent()"
+               (keyup)="onEditorEvent()"
+               (mouseup)="onEditorEvent()"
+               [attr.placeholder]="t('tickets.issueDescriptionPlaceholder')">
           </div>
         </div>
       </div>
 
-      <!-- Ticket Status Display -->
       <div *ngIf="isTicketCreated" class="ticket-status-display">
         <div class="alert alert-success" role="alert">
           <i class="bi bi-check-circle me-2"></i>
@@ -190,10 +179,8 @@
         </div>
       </div>
 
-      <!-- Auto-Save Indicator -->
       <div *ngIf="isSubmitting && !isTicketCreated && !isEditMode" class="auto-save-indicator saving">
-        <i class="bi bi-arrow-clockwise"></i>
-        <span>{{ t('tickets.creatingTicket') }}</span>
+        <i class="bi bi-arrow-clockwise"></i> <span>{{ t('tickets.creatingTicket') }}</span>
       </div>
 
       <div *ngIf="isTicketCreated && !isSubmitting" class="auto-save-indicator">
@@ -202,7 +189,6 @@
         <span *ngIf="isEditMode">{{ t('tickets.readyToUpdate') }}</span>
       </div>
 
-      <!-- ✅ UNIFIED: File Attachment Section -->
       <div class="form-group">
         <label class="form-label">
           <span>{{ t('tickets.attachment') }}</span>
@@ -210,226 +196,111 @@
             ({{ getTotalAttachmentCount() }} {{ t('tickets.files') }})
           </small>
         </label>
-
-        <!-- File Upload Instructions -->
         <div class="file-upload-instructions mb-2">
-          <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>
-            {{ t('tickets.fileUploadInstructions') }}
-          </small>
+          <small class="text-muted"><i class="bi bi-info-circle me-1"></i> {{ t('tickets.fileUploadInstructions') }}</small>
         </div>
 
-        <div class="file-upload-area unified-attachments" [class.has-files]="getTotalAttachmentCount() > 0"
-          [class.has-errors]="fileErrors.length > 0">
-
-          <!-- Files Container -->
+        <div class="file-upload-area unified-attachments" [class.has-files]="getTotalAttachmentCount() > 0" [class.has-errors]="fileErrors.length > 0">
           <div class="files-container">
-            <!-- File Upload Button -->
             <div class="file-upload-button">
               <label for="fileInput" class="upload-label">
-                <div class="upload-icon">
-                  <i class="bi bi-plus-circle"></i>
-                </div>
+                <div class="upload-icon"><i class="bi bi-plus-circle"></i></div>
                 <span class="upload-text">{{ t('tickets.addFile') }}</span>
               </label>
-              <!-- File Input -->
-              <input id="fileInput" type="file" multiple (change)="onFileSelect($event)" class="file-input"
-                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+              <input id="fileInput" type="file" multiple (change)="onFileSelect($event)" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
             </div>
 
-            <!-- ✅ UNIFIED FILES GRID -->
             <div class="unified-files-grid" *ngIf="getTotalAttachmentCount() > 0">
-
-              <!-- ✅ EXISTING FILES -->
               <div *ngFor="let attachment of existingAttachments; let i = index" class="file-item existing-file"
                 [class.deleting]="isAttachmentDeleting(attachment.attachment_id)"
                 [class.selected]="isAttachmentSelected(attachment.attachment_id)">
-
-                <!-- Loading State -->
-                <div class="attachment-loading"
-                  *ngIf="getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
-                  <div class="loading-spinner">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                      <span class="visually-hidden">{{ t('common.loading') }}</span>
-                    </div>
-                  </div>
-                  <div class="loading-text">{{ t('tickets.analyzingFile') }}</div>
+                
+                <div class="attachment-loading" *ngIf="getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
+                  <div class="loading-spinner"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>
                 </div>
 
-                <!-- Image Preview -->
-                <div class="file-preview"
-                  *ngIf="isExistingAttachmentImage(attachment) && !getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
-                  <img [src]="attachment.path" [alt]="getExistingAttachmentDisplayName(attachment)"
-                    (error)="onExistingAttachmentImageError(attachment.attachment_id)"
-                    (load)="onExistingAttachmentImageLoad(attachment.attachment_id)" loading="lazy"
-                    class="file-preview-img">
-                </div>
-
-                <!-- File Icon (Non-Image Files) -->
-                <div class="file-preview"
-                  *ngIf="!isExistingAttachmentImage(attachment) && !getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
-                  <div class="file-icon-container">
+                <div class="file-preview" *ngIf="!getExistingAttachmentFileInfo(attachment.attachment_id).isLoading">
+                  <img *ngIf="isExistingAttachmentImage(attachment)" [src]="attachment.path" class="file-preview-img" loading="lazy">
+                  <div *ngIf="!isExistingAttachmentImage(attachment)" class="file-icon-container">
                     <i [class]="getExistingAttachmentIcon(attachment)" class="file-icon-large"></i>
                   </div>
                 </div>
 
-                <!-- File Info -->
                 <div class="file-info">
-                  <span class="file-name" [title]="getExistingAttachmentDisplayName(attachment)">
-                    {{ getExistingAttachmentDisplayName(attachment) }}
-                  </span>
-                  <span class="file-size" *ngIf="formatExistingAttachmentSize(attachment)">
-                    {{ formatExistingAttachmentSize(attachment) }}
-                  </span>
+                  <span class="file-name" [title]="getExistingAttachmentDisplayName(attachment)">{{ getExistingAttachmentDisplayName(attachment) }}</span>
+                  <span class="file-size" *ngIf="formatExistingAttachmentSize(attachment)">{{ formatExistingAttachmentSize(attachment) }}</span>
                   <div class="file-type-info">
-                    <span class="file-type-badge"
-                      [ngClass]="'file-type-' + getExistingAttachmentFileInfo(attachment.attachment_id).type"
-                      [style.background-color]="getFileTypeColor(getExistingAttachmentFileInfo(attachment.attachment_id).type)">
+                    <span class="file-type-badge" [style.background-color]="getFileTypeColor(getExistingAttachmentFileInfo(attachment.attachment_id).type)">
                       {{ getExistingAttachmentFileInfo(attachment.attachment_id).type }}
                     </span>
                   </div>
                 </div>
 
-                <!-- Selection Checkbox -->
                 <div class="selection-checkbox" *ngIf="existingAttachments.length > 1">
-                  <input type="checkbox" [id]="'existing-' + attachment.attachment_id"
-                    [checked]="isAttachmentSelected(attachment.attachment_id)"
-                    (change)="toggleAttachmentSelection(attachment.attachment_id)">
+                  <input type="checkbox" [checked]="isAttachmentSelected(attachment.attachment_id)" (change)="toggleAttachmentSelection(attachment.attachment_id)">
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="file-actions">
-                  <!-- Download Button -->
-                  <button type="button" class="action-btn download-btn" (click)="downloadExistingAttachment(attachment)"
-                    [title]="t('common.download') + ' ' + getExistingAttachmentDisplayName(attachment)"
-                    [disabled]="isAttachmentDeleting(attachment.attachment_id)">
-                    <i class="bi bi-download"></i>
-                  </button>
-
-                  <!-- Remove Button -->
-                  <button type="button" class="action-btn remove-btn" (click)="removeExistingAttachment(i, attachment)"
-                    [title]="t('common.delete') + ' ' + getExistingAttachmentDisplayName(attachment)"
-                    [disabled]="isAttachmentDeleting(attachment.attachment_id)">
-
-                    <!-- Loading state -->
-                    <span *ngIf="isAttachmentDeleting(attachment.attachment_id)"
-                      class="spinner-border spinner-border-sm"></span>
-
-                    <!-- Normal state -->
+                  <button type="button" class="action-btn download-btn" (click)="downloadExistingAttachment(attachment)"><i class="bi bi-download"></i></button>
+                  <button type="button" class="action-btn remove-btn" (click)="removeExistingAttachment(i, attachment)" [disabled]="isAttachmentDeleting(attachment.attachment_id)">
+                    <span *ngIf="isAttachmentDeleting(attachment.attachment_id)" class="spinner-border spinner-border-sm"></span>
                     <i *ngIf="!isAttachmentDeleting(attachment.attachment_id)" class="bi bi-x-lg"></i>
                   </button>
                 </div>
-
-                <!-- Deleting Overlay -->
-                <div class="deleting-overlay" *ngIf="isAttachmentDeleting(attachment.attachment_id)">
-                  <div class="deleting-spinner">
-                    <div class="spinner-border text-danger" role="status">
-                      <span class="visually-hidden">{{ t('tickets.deleting') }}</span>
-                    </div>
-                    <small class="text-danger mt-2 fw-bold">{{ t('tickets.removingFile') }}</small>
-                  </div>
-                </div>
               </div>
 
-              <!-- ✅ NEW/SELECTED FILES -->
               <div *ngFor="let file of selectedFiles; let i = index" class="file-item new-file"
-                [class.uploaded]="isFileUploaded(file.name)" [class.uploading]="isFileUploading(file.name)"
-                [class.error]="isFileError(file.name)">
-
-                <!-- File Preview -->
+                [class.uploaded]="isFileUploaded(file.name)" [class.uploading]="isFileUploading(file.name)" [class.error]="isFileError(file.name)">
                 <div class="file-preview">
-                  <img *ngIf="isImageFile(file)" [src]="getFilePreview(file)" alt="Preview" class="file-preview-img">
+                  <img *ngIf="isImageFile(file)" [src]="getFilePreview(file)" class="file-preview-img">
                   <div *ngIf="!isImageFile(file)" class="file-icon-container">
                     <i class="file-icon-large" [class]="getFileIconClass(file)" [ngClass]="getFileTypeClass(file)"></i>
                   </div>
                 </div>
-
-                <!-- File Info -->
                 <div class="file-info">
                   <span class="file-name" [title]="file.name">{{ file.name }}</span>
                   <span class="file-size">{{ formatFileSize(file.size) }}</span>
                   <div class="file-type-info">
-                    <span class="file-type-badge new"
-                      [style.background-color]="getFileTypeColor(getFileTypeFromExtension(file.name))">
-                      {{ getFileTypeFromExtension(file.name) }}
-                    </span>
+                    <span class="file-type-badge new" [style.background-color]="getFileTypeColor(getFileTypeFromExtension(file.name))">{{ getFileTypeFromExtension(file.name) }}</span>
                   </div>
                 </div>
-
-                <!-- Remove Button -->
                 <div class="file-actions">
-                  <button type="button" class="action-btn remove-btn" (click)="removeFile(i)" [title]="t('common.delete')">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
+                  <button type="button" class="action-btn remove-btn" (click)="removeFile(i)"><i class="bi bi-x-lg"></i></button>
                 </div>
-
-                <!-- File Status Progress -->
-                <div class="upload-progress" *ngIf="isFileUploading(file.name)">
-                  <div class="progress-bar"></div>
-                </div>
+                <div class="upload-progress" *ngIf="isFileUploading(file.name)"><div class="progress-bar"></div></div>
               </div>
             </div>
           </div>
 
-          <!-- ✅ BULK ACTIONS -->
           <div class="bulk-actions" *ngIf="canShowBulkActions()">
             <div class="bulk-actions-header">
               <div class="bulk-selection">
-                <input type="checkbox" id="selectAllFiles"
-                  [checked]="selectedAttachmentCount === getTotalSelectableCount() && getTotalSelectableCount() > 0"
-                  [indeterminate]="selectedAttachmentCount > 0 && selectedAttachmentCount < getTotalSelectableCount()"
-                  (change)="toggleSelectAll()">
-                <label for="selectAllFiles">
-                  {{ t('tickets.selectAll') }} ({{ selectedAttachmentCount }}/{{ getTotalSelectableCount() }})
-                </label>
+                <input type="checkbox" id="selectAllFiles" [checked]="selectedAttachmentCount === getTotalSelectableCount()" [indeterminate]="selectedAttachmentCount > 0 && selectedAttachmentCount < getTotalSelectableCount()" (change)="toggleSelectAll()">
+                <label for="selectAllFiles">{{ t('tickets.selectAll') }} ({{ selectedAttachmentCount }}/{{ getTotalSelectableCount() }})</label>
               </div>
-
               <div class="bulk-action-buttons" *ngIf="hasSelectedAttachments">
-                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSelectedItems()"
-                  [disabled]="selectedAttachmentIds.size === 0">
-                  <i class="bi bi-trash me-1"></i>
-                  {{ t('tickets.removeSelected') }} ({{ selectedAttachmentCount }})
+                <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSelectedItems()" [disabled]="selectedAttachmentIds.size === 0">
+                  <i class="bi bi-trash me-1"></i> {{ t('tickets.removeSelected') }} ({{ selectedAttachmentCount }})
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- File Upload Errors -->
         <div class="file-errors" *ngIf="fileErrors.length > 0">
-          <div class="alert alert-warning" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>{{ t('tickets.fileErrors') }}</strong>
-            <ul class="mb-0 mt-2">
-              <li *ngFor="let error of fileErrors">{{ error }}</li>
-            </ul>
-          </div>
+          <div class="alert alert-warning" role="alert"><i class="bi bi-exclamation-triangle me-2"></i><strong>{{ t('tickets.fileErrors') }}</strong><ul class="mb-0 mt-2"><li *ngFor="let error of fileErrors">{{ error }}</li></ul></div>
         </div>
-
-        <!-- File Upload Success Messages -->
         <div class="file-success" *ngIf="fileSuccessMessages.length > 0">
-          <div class="alert alert-success" role="alert" *ngFor="let message of fileSuccessMessages">
-            <i class="bi bi-check-circle me-2"></i>
-            {{ message }}
-          </div>
+          <div class="alert alert-success" role="alert" *ngFor="let message of fileSuccessMessages"><i class="bi bi-check-circle me-2"></i>{{ message }}</div>
         </div>
-
-        <!-- Upload Progress -->
         <div class="upload-progress-section" *ngIf="isSubmitting && selectedFiles.length > 0">
-          <div class="progress mb-2">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
-              {{ t('common.uploading') }}
-            </div>
-          </div>
+          <div class="progress mb-2"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">{{ t('common.uploading') }}</div></div>
         </div>
-
       </div>
 
-      <!-- Form Validation Errors -->
       <div *ngIf="showValidationErrors" class="validation-errors">
         <div class="alert alert-danger" role="alert">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>{{ t('validation.errorsFound') }}</strong>
+          <i class="bi bi-exclamation-triangle me-2"></i><strong>{{ t('validation.errorsFound') }}</strong>
           <ul class="mb-0 mt-2">
             <li *ngIf="validationErrors['projectId']">{{ getFieldError('projectId') }}</li>
             <li *ngIf="validationErrors['categoryId']">{{ getFieldError('categoryId') }}</li>
@@ -438,63 +309,32 @@
         </div>
       </div>
 
-      <!-- Submit Button -->
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" [class.loading]="isSubmitting" [disabled]="isSubmitting">
-
           <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
-
-          <!-- ข้อความแยกระหว่าง New และ Edit -->
           <span *ngIf="!isSubmitting">{{ getSubmitButtonText() }}</span>
           <span *ngIf="isSubmitting && !isEditMode">{{ t('tickets.creatingTicket') }}</span>
           <span *ngIf="isSubmitting && isEditMode">{{ t('tickets.updatingTicket') }}</span>
         </button>
-
-        <!-- Cancel Button สำหรับ Edit Mode -->
-        <button *ngIf="isEditMode" type="button" class="btn btn-secondary ms-2" (click)="resetForm()"
-          [disabled]="isSubmitting">
-          {{ t('common.cancel') }}
-        </button>
-
-        <!-- Submit Status -->
-        <div class="submit-status mt-2" *ngIf="isSubmitting">
-          <small class="text-muted">
-            <i class="bi bi-clock me-1"></i>
-            <span *ngIf="!isEditMode">{{ t('tickets.pleaseWaitCreating') }}</span>
-            <span *ngIf="isEditMode">{{ t('tickets.pleaseWaitUpdating') }}</span>
-          </small>
-        </div>
+        <button *ngIf="isEditMode" type="button" class="btn btn-secondary ms-2" (click)="resetForm()" [disabled]="isSubmitting">{{ t('common.cancel') }}</button>
       </div>
     </form>
   </div>
 
-  <!-- Custom Alert -->
   <div class="custom-alert-overlay" *ngIf="showCustomAlert" (click)="onAlertClosed()">
     <div class="custom-alert-modal" (click)="$event.stopPropagation()">
       <div class="alert-content">
         <div class="alert-icon">
-          <!-- Error Icon -->
-          <div class="error-icon" *ngIf="alertType === 'error'">
-            <i class="bi bi-exclamation"></i>
-          </div>
-          <!-- Success Icon -->
-          <div class="success-icon" *ngIf="alertType === 'success'">
-            <i class="bi bi-check"></i>
-          </div>
+          <div class="error-icon" *ngIf="alertType === 'error'"><i class="bi bi-exclamation"></i></div>
+          <div class="success-icon" *ngIf="alertType === 'success'"><i class="bi bi-check"></i></div>
         </div>
-
-        <div class="alert-message" [innerHTML]="alertMessage.replace('\n', '<br>')">
-        </div>
+        <div class="alert-message" [innerHTML]="alertMessage.replace('\n', '<br>')"></div>
       </div>
     </div>
   </div>
-
-  <!-- Loading Overlay -->
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loading-spinner">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ t('common.loading') }}</span>
-      </div>
+      <div class="spinner-border text-primary" role="status"><span class="visually-hidden">{{ t('common.loading') }}</span></div>
       <p class="mt-3">{{ t('common.loading') }}</p>
     </div>
   </div>

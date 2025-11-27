@@ -278,5 +278,22 @@
     "lastMonth": "เดือนที่แล้ว",
     "thisYear": "ปีนี้",
     "custom": "กำหนดเอง"
+  },
+  "ticketDetail": {
+    "title": "รายละเอียดตั๋ว",
+    "ticketId": "หมายเลขตั๋ว",
+    "reporter": "ผู้แจ้ง",
+    "created": "วันที่สร้าง",
+    "updated": "อัปเดตล่าสุด",
+    "history": "ประวัติการดำเนินการ",
+    "evaluation": "การประเมินความพึงพอใจ",
+    "evaluationMessage": "กรุณาประเมินความพึงพอใจ",
+    "exportPdf": "ส่งออก PDF",
+    "loadingHistory": "กำลังโหลดประวัติ...",
+    "noHistory": "ไม่พบประวัติการดำเนินการ",
+    "backToAll": "กลับไปหน้ารายการตั๋ว",
+    "editTooltip": "แก้ไขตั๋วนี้",
+    "deleteTooltip": "ลบตั๋วนี้",
+    "deleteSuccess": "ลบตั๋วสำเร็จแล้ว"
   }
 }

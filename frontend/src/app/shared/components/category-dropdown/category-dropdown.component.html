@@ -9,7 +9,7 @@
       (change)="onSelectionChange($event)" [disabled]="loading || disabled">
 
       <option value="">{{ placeholder }}</option>
-      <option *ngFor="let category of categories" [value]="category.id">
+      <option *ngFor="let category of filteredCategories" [value]="category.id">
         {{ getCategoryDDL(category) }}
       </option>
     </select>

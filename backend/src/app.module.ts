@@ -50,7 +50,7 @@ import { TicketPriorityModule } from './ticket_priority/ticket_priority.module';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
+      host: process.env.DB_HOST,
       port: 5432,
       username: 'postgres',
       password: 'thanya7746',

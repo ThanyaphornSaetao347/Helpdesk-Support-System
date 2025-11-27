@@ -632,7 +632,8 @@ i.status-icon {
   padding: 0px;
   gap: 24px;
   width: 100%;
-  height: 66px;
+  height: auto; /* ✅ เปลี่ยนจาก 66px เป็น auto เพื่อรองรับเนื้อหา */
+  min-height: 66px;
 }
 
 .footer-section {
@@ -641,18 +642,22 @@ i.status-icon {
   align-items: flex-start;
   padding: 0px;
   gap: 10px;
-  width: 238px;
-  height: 66px;
+  /* width: 238px;  ❌ ลบหรือคอมเมนต์ค่าเดิมออก */
+  width: auto;      /* ✅ ปรับเป็น auto เพื่อขยายตามเนื้อหา */
+  min-width: 300px; /* ✅ กำหนดความกว้างขั้นต่ำให้มากขึ้น (เผื่อสำหรับวันที่ยาวๆ) */
+  height: auto;     /* ✅ เปลี่ยนเป็น auto */
 }
 
 .footer-item {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: center; /* หรือ flex-start ถ้าต้องการให้ชิดบน */
   padding: 0px;
   gap: 10px;
-  width: 238px;
-  height: 14px;
+  /* width: 238px; ❌ ลบค่าเดิม */
+  width: 100%;     /* ✅ ให้ขยายเต็ม section */
+  height: auto;    /* ✅ เปลี่ยนเป็น auto */
+  min-height: 14px;
 }
 
 .footer-label {
@@ -660,7 +665,10 @@ i.status-icon {
   font-size: 14px;
   line-height: 100%;
   color: #737373;
-  width: 67px;
+  /* width: 67px;   ❌ ลบค่าเดิมที่น้อยเกินไป */
+  width: 110px;     /* ✅ เพิ่มความกว้างเป็น 110px (หรือมากกว่า) ให้พอดีกับ "Last Updated" */
+  min-width: 110px; /* ✅ กันไม่ให้หดลง */
+  white-space: nowrap; /* ✅ บังคับไม่ให้ตัดบรรทัด */
 }
 
 .footer-value {
@@ -668,6 +676,8 @@ i.status-icon {
   font-size: 14px;
   line-height: 100%;
   color: #212121;
+  /* เพิ่มส่วนนี้ถ้าต้องการให้ text ไม่ตกบรรทัดในส่วน value ด้วย */
+  white-space: nowrap; 
 }
 
 /* ===== EVALUATION SECTION ===== */

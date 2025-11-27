@@ -1,95 +1,79 @@
-<!-- ===== SUCCESS MODAL ===== ✅ -->
 <div class="modal fade" [class.show]="showSuccessModal" [style.display]="showSuccessModal ? 'block' : 'none'"
   [style.z-index]="showSuccessModal ? '99999' : 'auto'" tabindex="-1" role="dialog" aria-labelledby="successModalLabel"
   aria-hidden="!showSuccessModal" *ngIf="showSuccessModal">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content success-modal">
       <div class="modal-body text-center">
-        <!-- Success Icon -->
         <div class="success-icon-container">
           <div class="success-star">
             <i class="bi bi-star-fill"></i>
           </div>
         </div>
 
-        <!-- Modal Title -->
         <h4 class="success-title">{{ modalTitle }}</h4>
 
-        <!-- Ticket Number -->
-        <p class="success-ticket-info">Ticket ID : {{ modalTicketNo }}</p>
+        <p class="success-ticket-info">{{ ui.ticket || 'Ticket' }} ID : {{ modalTicketNo }}</p>
 
-        <!-- Success Message -->
         <p class="success-message">{{ modalMessage }}</p>
 
-        <!-- Close Button -->
         <button type="button" class="btn btn-primary success-btn" (click)="closeSuccessModal()" autofocus>
-          ตกลง
+          {{ ui.ok || 'OK' }}
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Backdrop -->
 <div class="modal-backdrop fade" [class.show]="showSuccessModal" [style.z-index]="showSuccessModal ? '99998' : 'auto'"
   *ngIf="showSuccessModal" (click)="closeSuccessModal()"></div>
 
-<!-- ===== LOADING STATE ===== ✅ -->
 <div class="loading-container" *ngIf="isLoading">
   <div class="static-loading-indicator">
     <div class="loading-spinner"></div>
-    <p class="static-loading-text">Loading ticket details...</p>
+    <p class="static-loading-text">{{ ui.loadingTicket || 'Loading ticket details...' }}</p>
   </div>
 </div>
 
-<!-- ===== ERROR STATE ===== ✅ -->
 <div *ngIf="error && !isLoading" class="error-container">
   <div class="error-content">
     <i class="bi bi-exclamation-triangle error-icon"></i>
     <h3>{{ error }}</h3>
     <button class="btn btn-primary" (click)="backToList()">
       <i class="bi bi-arrow-left me-2"></i>
-      Back to All Tickets
+      {{ ui.backToAll || 'Back to All Tickets' }}
     </button>
   </div>
 </div>
 
-<!-- ===== MAIN CONTENT ===== ✅ -->
 <div *ngIf="ticketData && !isLoading" class="ticket-detail-page">
 
-  <!-- ===== BREADCRUMB ===== ✅ -->
   <div class="breadcrumb-container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item">
-          <a routerLink="/tickets">All Tickets</a>
+          <a routerLink="/tickets">{{ ui.allTickets }}</a>
         </li>
         <li class="breadcrumb-item">
-          <a routerLink="/tickets">Ticket</a>
+          <a routerLink="/tickets">{{ ui.ticket || 'Ticket' }}</a>
         </li>
         <li class="breadcrumb-item active" aria-current="page">
-          Ticket {{ ticketData.ticket.ticket_no }}
+          {{ ui.ticket || 'Ticket' }} {{ ticketData.ticket.ticket_no }}
         </li>
       </ol>
     </nav>
   </div>
 
-  <!-- ===== LAYOUT CONTAINER ===== -->
   <div class="layout-container">
 
-    <!-- ===== MAIN CONTENT AREA ===== -->
     <div class="main-content-area">
 
-      <!-- ===== TICKET INFORMATION CARD ===== -->
       <div class="ticket-card" [attr.data-updating]="isUpdating">
 
-        <!-- Ticket Header -->
         <div class="ticket-header">
           <div class="ticket-header-left">
             <div class="ticket-title-container">
-              <h1 class="ticket-title">Ticket {{ ticketData.ticket.ticket_no }}</h1>
+              <h1 class="ticket-title">{{ ui.ticket || 'Ticket' }} {{ ticketData.ticket.ticket_no }}</h1>
 
-              <!-- Status Badge -->
               <div class="status-badge" [ngClass]="getStatusBadgeClass()">
                 <span *ngIf="isLoadingStatus" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 <i class="status-icon" [ngClass]="getStatusIcon()" *ngIf="!isLoadingStatus"></i>
@@ -100,28 +84,24 @@
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="ticket-header-right">
             <div class="action-buttons">
-              <!-- ✅ Export PDF Dropdown Button -->
               <button [class]="getExportButtonClass()" type="button" (click)="exportToPdf()"
-                [disabled]="!canExportPdf()" title="ส่งออกเป็น PDF" *ngIf="hasPermission(1)">
+                [disabled]="!canExportPdf()" [title]="ui.exportPdf" *ngIf="hasPermission(1)">
                 <span *ngIf="isExportingPdf" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 <i class="bi bi-file-earmark-pdf me-1" *ngIf="!isExportingPdf"></i>
                 <span>{{ getExportButtonText() }}</span>
               </button>
 
-              <!-- ✅ Delete Button with Enhanced Tooltip -->
               <button [class]="getDeleteButtonClass()" (click)="onDeleteTicket()"
                 [disabled]="!canDelete() || isDeleting" [title]="getDeleteButtonTooltip()">
 
                 <span *ngIf="isDeleting" class="spinner-border spinner-border-sm me-1" role="status"></span>
                 <i class="bi bi-trash" *ngIf="!isDeleting"></i>
-                <span *ngIf="!isDeleting">Delete</span>
-                <span *ngIf="isDeleting">Deleting...</span>
+                <span *ngIf="!isDeleting">{{ ui.delete }}</span>
+                <span *ngIf="isDeleting">{{ ui.loading || 'Deleting...' }}</span>
               </button>
 
-              <!-- ✅ Edit Button with Enhanced Tooltip -->
               <button [class]="getEditButtonClass()" (click)="onEditTicket()" [disabled]="!canEdit() || isEditing"
                 [title]="getEditButtonTooltip()">
 
@@ -134,30 +114,27 @@
           </div>
         </div>
 
-        <!-- ✅ Export Status Alert -->
         <div *ngIf="exportError" class="alert alert-danger alert-dismissible fade show" role="alert">
           <i class="bi bi-exclamation-triangle me-2"></i>
           <strong>Export Error:</strong> {{ exportError }}
           <button type="button" class="btn-close" (click)="exportError = ''" aria-label="Close"></button>
         </div>
 
-        <!-- Progress Bar -->
         <div class="progress-bar">
           <div class="progress-fill"></div>
           <div class="progress-remaining"></div>
         </div>
 
-        <!-- Ticket Details -->
         <div class="ticket-details">
           <div class="detail-item">
-            <div class="detail-label">Ticket no:</div>
+            <div class="detail-label">{{ ui.ticketNo }}:</div>
             <div class="detail-value">{{ ticketData.ticket.ticket_no }}</div>
           </div>
 
           <div class="detail-divider"></div>
 
           <div class="detail-item">
-            <div class="detail-label">Priority:</div>
+            <div class="detail-label">{{ ui.priority }}:</div>
             <div class="detail-value" [ngClass]="getPriorityClass(ticketData.ticket.priority_id)">
               {{ getPriorityText(ticketData.ticket.priority_id) }}
             </div>
@@ -166,19 +143,18 @@
           <div class="detail-divider"></div>
 
           <div class="detail-item">
-            <div class="detail-label">Categories:</div>
+            <div class="detail-label">{{ ui.categories }}:</div>
             <div class="detail-value">{{ ticketData.ticket.categories_name }}</div>
           </div>
 
           <div class="detail-divider"></div>
 
           <div class="detail-item">
-            <div class="detail-label">Project:</div>
+            <div class="detail-label">{{ ui.project }}:</div>
             <div class="detail-value">{{ ticketData.ticket.project_name }}</div>
           </div>
         </div>
 
-        <!-- Issue Section -->
         <div class="issue-section">
           <div class="user-avatar">
             <div class="avatar-circle">
@@ -187,40 +163,35 @@
           </div>
 
           <div class="issue-content">
-            <div class="issue-label">Issue Description:</div>
+            <div class="issue-label">{{ ui.issueDesc }}:</div>
             <div class="issue-description">{{ ticketData.ticket.issue_description }}</div>
           </div>
         </div>
 
-        <!-- Attachments Section -->
         <app-file-list [attachments]="ticketData?.issue_attachment || []" [title]="'Original Issue Attachments'"
           [showTitle]="true" [allowDelete]="false" (fileClick)="onAttachmentClick($event)">
         </app-file-list>
 
-        <!-- Ticket Footer -->
         <div class="ticket-footer">
 
-          <!-- Reporter Information -->
           <div class="footer-section">
             <div class="footer-item">
-              <div class="footer-label">Reporter:</div>
+              <div class="footer-label">{{ ui.reporter }}:</div>
               <div class="footer-value">{{ ticketData.ticket.create_by }}</div>
             </div>
             <div class="footer-item">
-              <div class="footer-label">Created:</div>
+              <div class="footer-label">{{ ui.created }}:</div>
               <div class="footer-value">{{ formatDate(ticketData.ticket.create_date) }}</div>
             </div>
             <div class="footer-item">
-              <div class="footer-label">Updated:</div>
+              <div class="footer-label">{{ ui.updated }}:</div>
               <div class="footer-value">{{ formatDate(ticketData.ticket.update_date) }}</div>
             </div>
           </div>
 
-          <!-- ✅ Enhanced Evaluation Section -->
           <div class="evaluation-section" *ngIf="hasSpecificPermission(14)">
-            <div class="evaluation-label">Evaluation</div>
+            <div class="evaluation-label">{{ ui.evaluation }}</div>
 
-            <!-- Evaluation Status Message -->
             <div class="evaluation-status" *ngIf="(!canEvaluate || hasExistingSatisfaction) && getEvaluationMessage()"
               [ngClass]="{
                    'text-success': hasExistingSatisfaction,
@@ -229,17 +200,14 @@
               <small>{{ getEvaluationMessage() }}</small>
             </div>
 
-            <!-- Star Rating -->
             <div class="star-rating">
               <div class="star" *ngFor="let i of [1,2,3,4,5]" [ngClass]="getStarClass(i)"
                 (click)="canClickStar() ? setRating(i) : null" (mouseenter)="onStarMouseEnter(i)"
                 (mouseleave)="onStarMouseLeave()" [title]="getStarTooltip(i)">
 
-                <!-- Loading spinner เมื่อกำลังบันทึก -->
                 <span *ngIf="isSavingRating && i === currentRating" class="spinner-border spinner-border-sm"
                   role="status"></span>
 
-                <!-- Star icons -->
                 <i *ngIf="!isSavingRating || i !== currentRating" class="bi" [ngClass]="{
                      'bi-star-fill': isStarFilled(i),
                      'bi-star': !isStarFilled(i)
@@ -251,13 +219,9 @@
 
       </div>
 
-      <!-- ===== ✅ SUPPORT INFORMATION SECTION - ใช้ Components แยก ===== -->
-
-      <!-- สำหรับผู้ใช้ทั่วไป (ไม่ใช่ Supporter/Admin) - แสดง Display Component -->
       <app-support-information-display *ngIf="!canShowForm()" [ticketData]="ticketData">
       </app-support-information-display>
 
-      <!-- สำหรับ Supporter/Admin - แสดง Form Component -->
       <app-support-information-form *ngIf="canShowForm()" [ticketData]="ticketData" [ticket_no]="ticket_no"
         [isLoadingTicketData]="isLoading" (supporterDataSaved)="onSupporterDataSaved($event)"
         (ticketAssigned)="onTicketAssigned($event)" (refreshRequired)="onRefreshRequired()">
@@ -265,50 +229,41 @@
 
     </div>
 
-    <!-- ===== HISTORY SIDEBAR ===== ✅ -->
     <div class="history-card">
 
-      <!-- History Header -->
       <div class="history-header">
-        <h2 class="history-title">History</h2>
+        <h2 class="history-title">{{ ui.historyTitle }}</h2>
         <div class="history-progress-bar">
           <div class="history-progress-fill"></div>
           <div class="history-progress-remaining"></div>
         </div>
       </div>
 
-      <!-- Loading State for History -->
       <div *ngIf="isLoadingHistory" class="history-loading">
         <div class="loading-spinner-small">
           <span class="spinner-border spinner-border-sm"></span>
-          <span class="text-muted ms-2">Loading history...</span>
+          <span class="text-muted ms-2">{{ ui.loadingHistory }}</span>
         </div>
       </div>
 
-      <!-- Status History Timeline -->
       <div *ngIf="!isLoadingHistory && displayHistory && displayHistory.length > 0" class="history-timeline">
         <div *ngFor="let historyItem of displayHistory; let i = index" class="history-item"
           [class.current-status]="historyItem.is_active" [class.completed-status]="historyItem.is_completed"
           [class.pending-status]="!historyItem.is_active && !historyItem.is_completed">
 
-          <!-- History Badge -->
           <div class="history-badge" [ngClass]="getHistoryBadgeClass(historyItem)">
-            <!-- ✅ ส่ง status_id แทน status_name -->
             <i *ngIf="!isStatusSkipped(historyItem)" [class]="getHistoryIcon(historyItem.status_id)"></i>
           </div>
 
-          <!-- History Content -->
           <div class="history-content">
             <div class="history-status" [class.active-status]="historyItem.is_active">
               {{ historyItem.status_name }}
             </div>
 
-            <!-- ✅ แสดงเวลา ถ้ามี -->
             <div class="history-date" *ngIf="hasHistoryDate(historyItem)">
               {{ formatHistoryDate(historyItem.create_date) }}
             </div>
 
-            <!-- ✅ แสดง "-" ถ้าไม่มีเวลา (ไม่ว่าจะ completed หรือไม่) -->
             <div class="history-date pending" *ngIf="!hasHistoryDate(historyItem)">
               <span class="text-muted">-</span>
             </div>
@@ -316,11 +271,10 @@
         </div>
       </div>
 
-      <!-- No History State -->
       <div *ngIf="!isLoadingHistory && (!displayHistory || displayHistory.length === 0)" class="no-history">
         <div class="text-center text-muted py-3">
           <i class="bi bi-clock-history fs-4"></i>
-          <div class="mt-2">No history available</div>
+          <div class="mt-2">{{ ui.noHistory }}</div>
         </div>
       </div>
 
@@ -329,7 +283,6 @@
   </div>
 </div>
 
-<!-- Preview Modal -->
 <app-file-preview-modal [show]="showAttachmentModal" [attachment]="currentAttachment" (close)="closeAttachmentModal()"
   (download)="downloadAttachment($event)">
 </app-file-preview-modal>

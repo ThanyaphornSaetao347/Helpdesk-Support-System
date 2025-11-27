@@ -1,3 +1,4 @@
+/* sidebar.component.css */
 .sidebar {
   width: 250px;
   height: 100vh;
@@ -77,17 +78,22 @@
   transform: translateX(5px);
 }
 
-.nav-link.active,
-.nav-link.dropdown-toggle.active {
+/* =========================================
+   UPDATED: Active State Logic
+   ========================================= */
+
+/* 1. Active State สำหรับลิงก์เดี่ยว (Dashboard, New Ticket) */
+.nav-link.active {
   background: linear-gradient(135deg, #6c5ce7 0%, #5a4fcf 100%);
   color: #ffffff !important;
   box-shadow: 0 2px 4px rgba(108, 92, 231, 0.3);
-  border-radius: 0 25px 25px 0;
-  margin-right: 10px;
+  
+  /* แก้ไข: ปรับเป็นสี่เหลี่ยมผืนผ้า */
+  border-radius: 0 !important;
+  margin-right: 0 !important;
 }
 
-.nav-link.active::before,
-.nav-link.dropdown-toggle.active::before {
+.nav-link.active::before {
   content: '';
   position: absolute;
   left: 0;
@@ -95,6 +101,28 @@
   height: 100%;
   width: 4px;
   background: #ffffff;
+}
+
+/* 2. Active State สำหรับหัวข้อ Dropdown (Parent) */
+.menu-item.active {
+  background-image: none !important;
+  background-color: #f3f0ff !important;
+  color: #6c5ce7 !important;
+  font-weight: 700;
+  
+  /* แก้ไข: ปรับเป็นสี่เหลี่ยมผืนผ้า */
+  border-radius: 0 !important;
+  margin-right: 0 !important;
+  
+  box-shadow: none !important;
+}
+
+.menu-item.active::before {
+  display: none;
+}
+
+.menu-item.active i {
+  color: #6c5ce7 !important;
 }
 
 .nav-link i {
@@ -120,13 +148,6 @@
   color: #6c5ce7;
 }
 
-.menu-item.active {
-  background: linear-gradient(135deg, #6c5ce7 0%, #5a4fcf 100%);
-  color: #ffffff !important;
-  border-radius: 0 25px 25px 0;
-  margin-right: 10px;
-}
-
 /* Chevron rotation */
 .bi-chevron-down {
   transition: transform 0.3s ease;
@@ -146,7 +167,7 @@
 }
 
 .submenu.show {
-  max-height: 300px;
+  max-height: 500px;
   opacity: 1;
 }
 
@@ -163,10 +184,17 @@
   padding-left: 2.2rem !important;
 }
 
+/* 3. Active State สำหรับลูกเมนู (Child) */
 .submenu-item.active {
-  background-color: #6c5ce7 !important;
+  background: linear-gradient(135deg, #6c5ce7 0%, #5a4fcf 100%) !important;
   color: #ffffff !important;
-  border-left-color: #ffffff;
+  
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  
+  margin-right: 0;
 }
 
 /* Cursor pointer utility */
@@ -293,9 +321,9 @@
 .nav-link:focus,
 .submenu-item:focus,
 .menu-item:focus {
-  outline: 2px solid #6c5ce7;
-  outline-offset: 2px;
-  background-color: #f8f9fa;
+  outline: none !important; 
+  box-shadow: none !important;
+  background-color: transparent;
 }
 
 /* High Contrast Mode Support */
