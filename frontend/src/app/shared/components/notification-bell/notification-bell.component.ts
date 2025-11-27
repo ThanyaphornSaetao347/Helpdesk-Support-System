@@ -155,7 +155,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
     if (this.selectedFilter === 'unread') filtered = filtered.filter(n => n.status === NotificationStatus.UNREAD);
     if (this.selectedFilter === 'today') {
       const today = new Date();
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
       filtered = filtered.filter(n => new Date(n.created_at) >= today);
     }
     if (this.selectedType !== 'all') filtered = filtered.filter(n => n.notification_type === this.selectedType);
@@ -164,7 +164,7 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
 
   hasUnreadNotifications(): boolean { return this.unreadCount > 0; }
   hasNotifications(): boolean { return this.notifications.length > 0; }
-  
+
   canViewNotifications(): boolean { return this.authService.isAuthenticated(); }
 
   @HostListener('document:click', ['$event'])
@@ -174,14 +174,14 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
       this.closeDropdown();
     }
   }
-  
+
   onDropdownClick(event: Event): void { event.stopPropagation(); }
-  viewAllNotifications(event: Event): void { 
+  viewAllNotifications(event: Event): void {
     event.stopPropagation();
     this.closeDropdown();
-    this.router.navigate(['/notifications']); 
+    this.router.navigate(['/notifications']);
   }
-  
+
   openNotificationSettings(event: Event): void {
     event.stopPropagation();
     this.closeDropdown();
@@ -193,9 +193,9 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
     const saved = localStorage.getItem('language');
     if (saved === 'en' || saved === 'th') this.currentLanguage = saved;
   }
-  
+
   getText(en: string, th: string): string { return this.currentLanguage === 'th' ? th : en; }
-  
+
   formatTimeAgo(dateString: string): string {
     const now = new Date();
     const date = new Date(dateString);
@@ -210,17 +210,30 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   }
 
   getNotificationIcon(type: NotificationType | string): string {
-     const icons: any = { 'NEW_TICKET': 'bi-plus-circle-fill', 'STATUS_CHANGE': 'bi-arrow-repeat', 'ASSIGNMENT': 'bi-person-check-fill', 'COMMENT': 'bi-chat-dots-fill', 'MENTION': 'bi-at', 'RESOLVED': 'bi-check-circle-fill', 'CLOSED': 'bi-x-circle-fill' };
-     return icons[type] || 'bi-bell-fill';
+    const icons: any = {
+      'NEW_TICKET': 'bi-plus-circle-fill',
+      'STATUS_CHANGE': 'bi-arrow-repeat',
+      'ASSIGNMENT': 'bi-person-check-fill'
+    };
+    return icons[type] || 'bi-bell-fill';
   }
 
   getNotificationColor(type: NotificationType | string): string {
-    const colors: any = { 'NEW_TICKET': '#6c5ce7', 'STATUS_CHANGE': '#74b9ff', 'ASSIGNMENT': '#fdcb6e', 'COMMENT': '#00b894', 'MENTION': '#e17055', 'RESOLVED': '#00b894', 'CLOSED': '#636e72' };
+    const colors: any = {
+      'NEW_TICKET': '#6c5ce7',
+      'STATUS_CHANGE': '#74b9ff',
+      'ASSIGNMENT': '#fdcb6e',
+    };
     return colors[type] || '#6c5ce7';
   }
-  
+
   getPriorityBadgeClass(priority: NotificationPriority): string {
-    const classes: any = { [NotificationPriority.LOW]: 'badge-success', [NotificationPriority.MEDIUM]: 'badge-info', [NotificationPriority.HIGH]: 'badge-warning', [NotificationPriority.URGENT]: 'badge-danger' };
+    const classes: any = {
+      [NotificationPriority.LOW]: 'badge-success',
+      [NotificationPriority.MEDIUM]: 'badge-info',
+      [NotificationPriority.HIGH]: 'badge-warning',
+      // [NotificationPriority.URGENT]: 'badge-danger' 
+    };
     return classes[priority];
   }
 

@@ -197,8 +197,8 @@ export class NotificationService implements OnDestroy {
     this.unreadCountSubject.next(0);
     this.updateSummaryLocal();
 
-    return this.http.put(
-      `${this.apiUrl}/mark-all-read`,
+    return this.http.patch(
+      `${this.apiUrl}/read-all`,
       {},
       { headers: this.getAuthHeaders() }
     ).pipe(catchError(this.handleError.bind(this)));
