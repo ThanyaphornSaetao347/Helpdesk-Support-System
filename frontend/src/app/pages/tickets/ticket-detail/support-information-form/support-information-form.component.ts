@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges, HostListener, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, inject, OnChanges, SimpleChanges, HostListener, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -160,6 +160,8 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
   public ticketService = inject(TicketService);
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
+  // ✅ NEW: Inject ChangeDetectorRef
+  private cdr = inject(ChangeDetectorRef);
 
   // API URL
   public apiUrl = environment.apiUrl;
@@ -264,6 +266,23 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       isAnalyzed?: boolean;
     }
   } = {};
+
+  // ✅ NEW: Rich Text Editor Properties (เหมือนใน ticket-create)
+  @ViewChild('fixIssueEditor') fixIssueEditor!: ElementRef;
+  @ViewChild('richImgInput') richImgInput!: ElementRef;
+
+  // ✅ Toolbar State (เหมือน Word)
+  toolbarState = {
+    bold: false,
+    italic: false,
+    underline: false,
+    justifyLeft: true,
+    justifyCenter: false,
+    justifyRight: false,
+    justifyFull: false,
+    insertUnorderedList: false,
+    insertOrderedList: false
+  };
 
   constructor() {
     this.businessHoursCalculator = new BusinessHoursCalculator();
@@ -404,6 +423,12 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       } else {
         console.log('❌ No fix_attachment found');
       }
+      
+      // ✅ NEW: อัปเดต Editor Content อีกครั้ง (กรณีมีข้อมูล Ticket Data)
+      if (this.fixIssueEditor?.nativeElement && this.ticketData?.ticket?.fix_issue_description) {
+        console.log('📝 Setting Editor innerHTML from ticketData');
+        this.fixIssueEditor.nativeElement.innerHTML = this.ticketData.ticket.fix_issue_description;
+      }
     }, 500);
   }
 
@@ -433,6 +458,109 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       this.formChangeSubscription.unsubscribe();
     }
   }
+
+  // ===== ✅ NEW: Rich Text Editor Logic =====
+
+  /**
+   * 1. เช็คสถานะปุ่ม (Active State)
+   */
+  checkToolbarStatus(): void {
+    this.toolbarState.bold = document.queryCommandState('bold');
+    this.toolbarState.italic = document.queryCommandState('italic');
+    this.toolbarState.underline = document.queryCommandState('underline');
+    this.toolbarState.insertUnorderedList = document.queryCommandState('insertUnorderedList');
+    this.toolbarState.insertOrderedList = document.queryCommandState('insertOrderedList');
+    this.toolbarState.justifyLeft = document.queryCommandState('justifyLeft');
+    this.toolbarState.justifyCenter = document.queryCommandState('justifyCenter');
+    this.toolbarState.justifyRight = document.queryCommandState('justifyRight');
+    this.toolbarState.justifyFull = document.queryCommandState('justifyFull');
+
+    // Default to justifyLeft if no other alignment is active
+    if (!this.toolbarState.justifyCenter && !this.toolbarState.justifyRight && !this.toolbarState.justifyFull) {
+      this.toolbarState.justifyLeft = true;
+    }
+    this.cdr.detectChanges(); // Force update UI after state change
+  }
+
+  /**
+   * 2. จัดรูปแบบข้อความ
+   */
+  formatText(command: string): void {
+    document.execCommand(command, false);
+    this.checkToolbarStatus();
+    this.updateFormContent();
+  }
+
+  insertList(ordered: boolean): void {
+    const command = ordered ? 'insertOrderedList' : 'insertUnorderedList';
+    document.execCommand(command, false);
+    this.checkToolbarStatus();
+    this.updateFormContent();
+  }
+
+  insertLink(): void {
+    // Note: ใช้ prompt ง่ายๆ แทน UI Complex
+    const url = prompt('Enter the URL:'); 
+    if (url) {
+      document.execCommand('createLink', false, url);
+      this.checkToolbarStatus();
+      this.updateFormContent();
+    }
+  }
+  
+  /**
+   * 3. จัดการ event ต่างๆ จาก Editor (click, keyup, mouseup)
+   */
+  onEditorEvent(): void {
+    this.checkToolbarStatus();
+  }
+
+  /**
+   * 4. จัดการ Input และอัปเดต Form Control
+   */
+  onDescriptionInput(event: Event): void {
+    const target = event.target as HTMLElement;
+    // ใช้ innerHTML เพื่อเก็บ rich text content
+    const content = target.innerHTML;
+    this.supporterForm.patchValue({ fix_issue_description: content });
+    this.checkToolbarStatus();
+
+    // Check validation for error message (optional, but good practice)
+    if (content && content.trim().length >= 1) {
+      this.supporterFormValidation.fix_issue_description = { isValid: true };
+    }
+  }
+
+  /**
+   * 5. Helper สำหรับดึง HTML content ไปใส่ใน Form Control
+   */
+  private updateFormContent(): void {
+    if (this.fixIssueEditor && this.fixIssueEditor.nativeElement) {
+      this.supporterForm.patchValue({ fix_issue_description: this.fixIssueEditor.nativeElement.innerHTML }, { emitEvent: false });
+    }
+  }
+
+  /**
+   * 6. จัดการอัปโหลดรูปภาพ (ใช้ Base64 Data URL)
+   */
+  onRichTextConfigImage(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        document.execCommand('insertImage', false, e.target.result);
+        this.updateFormContent();
+      };
+      reader.readAsDataURL(file);
+    }
+    event.target.value = ''; // Reset input
+  }
+
+  // ===== End Rich Text Editor Logic =====
 
   // ===== 🆕 NEW: Persistence Methods (Section 1) =====
 
@@ -484,6 +612,11 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
         }
         if (savedData.formData.lead_time) {
           this.leadTime = savedData.formData.lead_time;
+        }
+
+        // ✅ NEW: Restore rich editor content
+        if (this.fixIssueEditor?.nativeElement && savedData.formData.fix_issue_description) {
+          this.fixIssueEditor.nativeElement.innerHTML = savedData.formData.fix_issue_description;
         }
       }
 
@@ -1048,6 +1181,7 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
       'text/plain': 'txt',
       'text/csv': 'csv',
+      'application/json': 'json',
       'application/zip': 'zip',
       'application/x-rar-compressed': 'rar'
     };
@@ -1928,6 +2062,12 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
     // ✅ Validate form
     this.validateSupporterForm();
 
+    // ✅ NEW: อัปเดต Editor content (Issue Resolution)
+    if (this.fixIssueEditor?.nativeElement) {
+      this.fixIssueEditor.nativeElement.innerHTML = ticket.fix_issue_description || '';
+      this.checkToolbarStatus();
+    }
+
     // ✅ เพิ่มบรรทัดนี้ไว้ "ท้ายสุด" ของ updateFormWithTicketData()
     // ✅ เพิ่มท้ายฟังก์ชัน updateFormWithTicketData()
     const dueControl = this.supporterForm.get('due_date');
@@ -2130,7 +2270,7 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       formValue.due_date ||
       (formValue.lead_time !== null && formValue.lead_time !== '') ||
       formValue.close_estimate ||
-      (formValue.fix_issue_description && formValue.fix_issue_description.trim()) ||
+      (formValue.fix_issue_description && formValue.fix_issue_description.trim() && formValue.fix_issue_description.trim() !== '<br>') || // ✅ เพิ่มการตรวจสอบ HTML Empty
       (formValue.related_ticket_id && formValue.related_ticket_id.trim()) ||
       this.selectedFiles.length > 0 ||
       this.selectedAssigneeId
@@ -2229,7 +2369,7 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       due_date: [''],
       lead_time: [null, [Validators.min(0), Validators.max(10000)]],
       close_estimate: [''],
-      fix_issue_description: ['', [Validators.maxLength(5000)]],
+      fix_issue_description: ['', [Validators.maxLength(5000)]], // ✅ แก้ไข: ลบ Validators.required ออก (ตาม Logic TicketService)
       related_ticket_id: ['']
     });
 
@@ -2858,6 +2998,26 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
     } else {
       this.supporterFormValidation.close_estimate = { isValid: true };
     }
+
+    // ✅ Fix Issue Description validation - เช็คเมื่อมีการเลือก Action ที่ต้องการ Issue Resolution (3, 4, 5)
+    const currentActionId = parseInt(formValue.action.toString());
+    
+    // 💡 แก้ไข: ใช้การเปรียบเทียบแบบ OR condition แทน .includes() เพื่อแก้ Type Error
+    const needsResolution = (
+        currentActionId === TICKET_STATUS_IDS.IN_PROGRESS ||
+        currentActionId === TICKET_STATUS_IDS.RESOLVED ||
+        currentActionId === TICKET_STATUS_IDS.COMPLETED
+    );
+    
+    // หากต้องการ Issue Resolution แต่เนื้อหาว่างเปล่า (หรือเป็นแค่ <br>)
+    if (needsResolution && (!formValue.fix_issue_description || formValue.fix_issue_description.trim() === '' || formValue.fix_issue_description.trim() === '<br>')) {
+        this.supporterFormValidation.fix_issue_description = {
+            isValid: false,
+            error: 'เมื่อเปลี่ยนสถานะเป็น In Progress/Resolved/Completed ต้องกรอก Issue Resolution'
+        };
+    } else {
+        this.supporterFormValidation.fix_issue_description = { isValid: true };
+    }
   }
 
   hasFieldError(fieldName: keyof SupporterFormValidation): boolean {
@@ -2890,7 +3050,15 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       return;
     }
 
-    this.supporterFormState.isSaving = false;
+    // ✅ CRITICAL: Force validation before saving
+    this.validateSupporterForm();
+    if (!this.supporterForm.valid || !this.supporterFormValidation.fix_issue_description.isValid) {
+        this.markFormGroupTouched();
+        this.supporterFormState.error = 'กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง (รวมถึง Issue Resolution)';
+        return;
+    }
+
+    this.supporterFormState.isSaving = true;
     this.supporterFormState.error = null;
 
     this.executeSaveSequence(hasSupporterChanges, hasAssigneeChanged); // ✅ แก้จาก hasAssigneeSelected
@@ -2940,12 +3108,7 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
 
   private saveSupporterData(): Promise<boolean> {
     return new Promise((resolve) => {
-      if (!this.supporterForm.valid) {
-        this.markFormGroupTouched();
-        this.supporterFormState.error = 'กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง';
-        resolve(false);
-        return;
-      }
+      // ⚠️ Note: Form validation ถูกเรียกแล้วใน onSaveAll()
 
       const formData = this.createSupporterFormData();
 
@@ -3146,6 +3309,7 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       formData.close_estimate = formValue.close_estimate;
     }
 
+    // ✅ NEW: ใช้ formValue.fix_issue_description โดยตรง (เป็น HTML)
     if (formValue.fix_issue_description) {
       formData.fix_issue_description = formValue.fix_issue_description.trim();
     }
@@ -3166,13 +3330,18 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       return true;
     }
 
+    // ✅ แก้ไข: ตรวจสอบ fix_issue_description ที่เป็น HTML ด้วย
+    const isFixIssueDescriptionChanged = formValue.fix_issue_description && 
+      formValue.fix_issue_description.trim() !== '' && 
+      formValue.fix_issue_description.trim() !== '<br>'; // ตรวจสอบ <br> ที่เกิดจาก contenteditable
+
     const hasOptionalChanges =
       (formValue.priority !== null && formValue.priority !== '') || // ✅ เพิ่มบรรทัดนี้
       (formValue.estimate_time && formValue.estimate_time !== '') ||
       (formValue.due_date && formValue.due_date !== '') ||
       (formValue.lead_time && formValue.lead_time !== '') ||
       (formValue.close_estimate && formValue.close_estimate !== '') ||
-      (formValue.fix_issue_description && formValue.fix_issue_description.trim() !== '') ||
+      isFixIssueDescriptionChanged ||
       (formValue.related_ticket_id && formValue.related_ticket_id.trim() !== '') ||
       (this.selectedFiles && this.selectedFiles.length > 0);
 
@@ -3192,7 +3361,10 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
     const hasTicket = !!this.ticketData?.ticket;
     const formReady = this.isFormReady();
 
-    return hasPermission && hasChanges && notLoading && hasTicket && formReady;
+    // ✅ CRITICAL: เพิ่มการตรวจสอบ form.valid และ fix_issue_description validation
+    const formValid = this.supporterForm?.valid && this.supporterFormValidation.fix_issue_description.isValid;
+
+    return hasPermission && hasChanges && notLoading && hasTicket && formReady && formValid;
   }
 
   getSaveAllButtonText(): string {
@@ -3293,6 +3465,11 @@ export class SupportInformationFormComponent implements OnInit, OnChanges, OnDes
       related_ticket_id: { isValid: true },
       attachments: { isValid: true }
     };
+
+    // ✅ NEW: Clear Rich Editor Content
+    if (this.fixIssueEditor?.nativeElement) {
+      this.fixIssueEditor.nativeElement.innerHTML = '';
+    }
   }
 
   private markFormGroupTouched(): void {

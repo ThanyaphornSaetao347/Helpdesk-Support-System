@@ -77,8 +77,7 @@ export class TicketService {
       .leftJoin(
         'ticket_categories_language',
         'tcl',
-        'tcl.category_id = tc.id AND tcl.language_id = :lang',
-        { lang: 'th' },
+        'tcl.category_id = tc.id'
       )
       .select('tc.id', 'categoryId')
       .addSelect('tcl.name', 'categoryName')
@@ -436,12 +435,12 @@ export class TicketService {
       // ✅ Query ข้อมูลหลัก Ticket
       const ticket = await this.ticketRepo
         .createQueryBuilder('t')
-        .leftJoin('ticket_categories_language', 'tcl', 'tcl.category_id = t.categories_id AND tcl.language_id = :lang', { lang: 'th' })
+        .leftJoin('ticket_categories_language', 'tcl', 'tcl.category_id = t.categories_id')
         .leftJoin('project', 'p', 'p.id = t.project_id')
         .leftJoin('users', 'uc', 'uc.id = t.create_by')
         .leftJoin('users', 'uu', 'uu.id = t.update_by')
         .leftJoin('ticket_status', 'ts', 'ts.id = t.status_id')
-        .leftJoin('ticket_status_language', 'tsl', 'tsl.status_id = ts.id AND tsl.language_id = :lang', { lang: 'th' })
+        .leftJoin('ticket_status_language', 'tsl', 'tsl.status_id = ts.id')
         .leftJoin('ticket_priority', 'tp', 'tp.id = t.priority_id')
         .select([
           't.id AS id',
@@ -461,8 +460,10 @@ export class TicketService {
           't.update_date AS update_date',
           'tp.id AS priority_id',
           't.isenabled AS isenabled',
+          'tcl.language_id AS cate_lang_id',
           'tcl.name AS categories_name',
           'p.name AS project_name',
+          'tsl.language_id AS status_lang_id',
           'tsl.name AS status_name',
           `uc.firstname || ' ' || uc.lastname AS create_by`,
           `uu.firstname || ' ' || uu.lastname AS update_by`,
@@ -775,9 +776,9 @@ export class TicketService {
       // ✅ เริ่มสร้าง QueryBuilder หลัก
       const baseQuery = this.ticketRepo
         .createQueryBuilder('t')
-        .leftJoin('ticket_categories_language', 'tcl', 'tcl.category_id = t.categories_id AND tcl.language_id = :lang', { lang: 'th' })
+        .leftJoin('ticket_categories_language', 'tcl', 'tcl.category_id = t.categories_id')
         .leftJoin('project', 'p', 'p.id = t.project_id')
-        .leftJoin('ticket_status_language', 'tsl', 'tsl.status_id = t.status_id AND tsl.language_id = :lang', { lang: 'th' })
+        .leftJoin('ticket_status_language', 'tsl', 'tsl.status_id = t.status_id')
         .leftJoin('users', 'u', 'u.id = t.create_by')
         .leftJoin('ticket_priority', 'tp', 'tp.id = t.priority_id')
         .where('t.isenabled = true');
@@ -1621,9 +1622,7 @@ export class TicketService {
       .leftJoin(
         'ticket_categories_language',
         'tcl',
-        'tcl.category_id = tc.id AND tcl.language_id = :lang',
-        { lang: 'th' },
-      )
+        'tcl.category_id = tc.id')
       .leftJoin('users', 'u', 't.create_by = u.id')
       .select([
         't.id AS id',

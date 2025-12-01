@@ -168,27 +168,6 @@
         </div>
       </div>
 
-      <div *ngIf="isTicketCreated" class="ticket-status-display">
-        <div class="alert alert-success" role="alert">
-          <i class="bi bi-check-circle me-2"></i>
-          <strong *ngIf="!isEditMode">✅ {{ t('tickets.ticketCreatedSuccess', { ticketNo: ticket_no }) }}</strong>
-          <strong *ngIf="isEditMode">📝 {{ t('tickets.editingTicket', { ticketNo: ticket_no }) }}</strong>
-          <br>
-          <small *ngIf="!isEditMode">{{ t('tickets.canUploadOrSubmit') }}</small>
-          <small *ngIf="isEditMode">{{ t('tickets.makeChangesAndUpdate') }}</small>
-        </div>
-      </div>
-
-      <div *ngIf="isSubmitting && !isTicketCreated && !isEditMode" class="auto-save-indicator saving">
-        <i class="bi bi-arrow-clockwise"></i> <span>{{ t('tickets.creatingTicket') }}</span>
-      </div>
-
-      <div *ngIf="isTicketCreated && !isSubmitting" class="auto-save-indicator">
-        <i class="bi bi-check-circle-fill"></i>
-        <span *ngIf="!isEditMode">{{ t('tickets.ticketSaved') }}</span>
-        <span *ngIf="isEditMode">{{ t('tickets.readyToUpdate') }}</span>
-      </div>
-
       <div class="form-group">
         <label class="form-label">
           <span>{{ t('tickets.attachment') }}</span>
@@ -202,15 +181,16 @@
 
         <div class="file-upload-area unified-attachments" [class.has-files]="getTotalAttachmentCount() > 0" [class.has-errors]="fileErrors.length > 0">
           <div class="files-container">
-            <div class="file-upload-button">
-              <label for="fileInput" class="upload-label">
-                <div class="upload-icon"><i class="bi bi-plus-circle"></i></div>
-                <span class="upload-text">{{ t('tickets.addFile') }}</span>
-              </label>
-              <input id="fileInput" type="file" multiple (change)="onFileSelect($event)" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
-            </div>
+            <div class="unified-files-grid">
+              
+              <div class="file-upload-button">
+                <label for="fileInput" class="upload-label">
+                  <div class="upload-icon"><i class="bi bi-plus-circle"></i></div>
+                  <span class="upload-text">{{ t('tickets.addFile') }}</span>
+                </label>
+                <input id="fileInput" type="file" multiple (change)="onFileSelect($event)" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+              </div>
 
-            <div class="unified-files-grid" *ngIf="getTotalAttachmentCount() > 0">
               <div *ngFor="let attachment of existingAttachments; let i = index" class="file-item existing-file"
                 [class.deleting]="isAttachmentDeleting(attachment.attachment_id)"
                 [class.selected]="isAttachmentSelected(attachment.attachment_id)">
@@ -269,6 +249,7 @@
                 </div>
                 <div class="upload-progress" *ngIf="isFileUploading(file.name)"><div class="progress-bar"></div></div>
               </div>
+
             </div>
           </div>
 
@@ -286,13 +267,7 @@
             </div>
           </div>
         </div>
-
-        <div class="file-errors" *ngIf="fileErrors.length > 0">
-          <div class="alert alert-warning" role="alert"><i class="bi bi-exclamation-triangle me-2"></i><strong>{{ t('tickets.fileErrors') }}</strong><ul class="mb-0 mt-2"><li *ngFor="let error of fileErrors">{{ error }}</li></ul></div>
-        </div>
-        <div class="file-success" *ngIf="fileSuccessMessages.length > 0">
-          <div class="alert alert-success" role="alert" *ngFor="let message of fileSuccessMessages"><i class="bi bi-check-circle me-2"></i>{{ message }}</div>
-        </div>
+        
         <div class="upload-progress-section" *ngIf="isSubmitting && selectedFiles.length > 0">
           <div class="progress mb-2"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">{{ t('common.uploading') }}</div></div>
         </div>

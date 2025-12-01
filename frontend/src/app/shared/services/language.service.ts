@@ -47,6 +47,9 @@ export class LanguageService {
   // ✅ Translation Cache
   private translations: Map<SupportedLanguage, TranslationData> = new Map();
 
+  // ✅ NEW: Missing Keys Cache (ป้องกัน Log รัวๆ)
+  private missingKeysLog: Set<string> = new Set();
+
   constructor() {
     // Initialize with stored or default language
     const storedLanguage = this.getStoredLanguage();
@@ -73,17 +76,19 @@ export class LanguageService {
    */
   setLanguage(language: SupportedLanguage): void {
     if (!this.isLanguageSupported(language)) {
-      console.warn(`⚠️ Language "${language}" is not supported. Falling back to ${this.DEFAULT_LANGUAGE}`);
+      // console.warn(`⚠️ Language "${language}" is not supported. Falling back to ${this.DEFAULT_LANGUAGE}`);
       language = this.DEFAULT_LANGUAGE;
     }
 
     const currentLang = this.currentLanguageSubject.value;
     if (currentLang === language) {
-      console.log('ℹ️ Language is already set to:', language);
       return;
     }
 
     console.log('🌐 Changing language from', currentLang, 'to', language);
+
+    // ✅ Reset missing keys log when language changes
+    this.missingKeysLog.clear();
 
     // Update state
     this.currentLanguageSubject.next(language);
@@ -142,10 +147,21 @@ export class LanguageService {
    */
   translate(key: string, params?: { [key: string]: any }): string {
     const language = this.getCurrentLanguage();
+    
+    // ตรวจสอบว่าโหลดภาษาเสร็จหรือยัง ถ้ายังไม่เสร็จให้คืนค่า key ไปก่อนโดยไม่ Log Error
+    if (!this.translations.has(language)) {
+      return key;
+    }
+
     const translation = this.getTranslationByKey(key, language);
 
     if (!translation) {
-      console.warn(`⚠️ Translation not found for key: ${key} (language: ${language})`);
+      // ✅ FIX: Log only once per key per session (ป้องกัน Console Flood)
+      const logKey = `${language}:${key}`;
+      if (!this.missingKeysLog.has(logKey)) {
+        console.warn(`⚠️ Translation not found for key: "${key}" (lang: ${language})`);
+        this.missingKeysLog.add(logKey);
+      }
       return key; // Return key as fallback
     }
 
@@ -209,7 +225,7 @@ export class LanguageService {
   private saveLanguageToStorage(language: SupportedLanguage): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, language);
-      console.log('💾 Language saved to storage:', language);
+      // console.log('💾 Language saved to storage:', language); // ลด Log
     } catch (error) {
       console.error('❌ Error saving language to storage:', error);
     }
@@ -222,7 +238,7 @@ export class LanguageService {
     try {
       const browserLang = navigator.language.split('-')[0].toLowerCase();
       if (this.isLanguageSupported(browserLang)) {
-        console.log('🌐 Browser language detected:', browserLang);
+        // console.log('🌐 Browser language detected:', browserLang);
         return browserLang as SupportedLanguage;
       }
     } catch (error) {
@@ -237,12 +253,11 @@ export class LanguageService {
    */
   private async loadTranslations(language: SupportedLanguage): Promise<void> {
     if (this.translations.has(language)) {
-      console.log('✅ Translations already loaded for:', language);
       return;
     }
 
     try {
-      console.log('📥 Loading translations for:', language);
+      // console.log('📥 Loading translations for:', language);
       const response = await fetch(`/assets/i18n/${language}.json`);
       
       if (!response.ok) {
@@ -251,7 +266,9 @@ export class LanguageService {
 
       const data: TranslationData = await response.json();
       this.translations.set(language, data);
-      console.log('✅ Translations loaded successfully for:', language);
+      console.log('✅ Translations loaded for:', language);
+      
+      // Force UI update check implies logs might reappear if cleared, but safely.
     } catch (error) {
       console.error(`❌ Error loading translations for ${language}:`, error);
       // Set empty object to prevent repeated failed attempts
@@ -304,7 +321,6 @@ export class LanguageService {
       detail: { language, timestamp: Date.now() }
     });
     window.dispatchEvent(event);
-    console.log('📢 Language change event broadcasted:', language);
   }
 
   /**
@@ -318,8 +334,6 @@ export class LanguageService {
       if (config) {
         document.documentElement.dir = config.direction;
       }
-      
-      console.log('✅ Document language attribute updated to:', language);
     } catch (error) {
       console.error('❌ Error updating document language:', error);
     }
@@ -420,6 +434,7 @@ export class LanguageService {
   clearCache(): void {
     console.log('🧹 Clearing translation cache');
     this.translations.clear();
+    this.missingKeysLog.clear(); // Reset warnings too
     
     // Reload current language translations
     const currentLang = this.getCurrentLanguage();
@@ -436,6 +451,7 @@ export class LanguageService {
       currentLanguage: this.getCurrentLanguage(),
       supportedLanguages: this.SUPPORTED_LANGUAGES.map(l => l.code),
       cachedLanguages: Array.from(this.translations.keys()),
+      missingKeysCount: this.missingKeysLog.size,
       browserLanguage: navigator.language,
       documentLanguage: document.documentElement.lang,
       storageKey: this.STORAGE_KEY,

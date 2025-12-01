@@ -257,7 +257,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.loadDashboardStats();
     this.loadCategoryBreakdown();
-    this.loadCustomerForProjects();
+    // this.loadCustomerForProjects(); // ❌ FIXED: ปิดการเรียก API ที่ทำให้เกิด 404
   }
 
   loadDashboardStats(): void {
@@ -390,7 +390,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadCustomerForProjects(): void {
     this.loadingCustomers = true;
-    console.log('Loading customer for projects...');
+    // console.log('Loading customer for projects...');
 
     const sub = this.apiService.getCustomerForProject().subscribe({
       next: (response) => {
@@ -401,7 +401,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadingCustomers = false;
       },
       error: (error) => {
-        console.error('Error loading customer projects:', error);
+        // ✅ FIXED: เปลี่ยน Error เป็น Warn เพื่อจัดการ 404 อย่างนุ่มนวล
+        console.warn('⚠️ Legacy API (customer-for-project) not found. Skipping.');
         this.loadingCustomers = false;
         this.customerForProjects = [];
       }
