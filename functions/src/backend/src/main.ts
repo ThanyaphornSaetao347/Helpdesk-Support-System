@@ -17,7 +17,6 @@ async function bootstrap() {
     origin: [
     process.env.FRONTEND_URL,
     'https://helpdesk-support-44934.web.app',    // กัน fail หาก ENV โหลดไม่ทัน
-    'http://localhost:4200'                      // เผื่อใช้ตอน local
   ],
     credentials: false,               // เปลี่ยนเป็น false เพราะไม่ใช้ cookie
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
