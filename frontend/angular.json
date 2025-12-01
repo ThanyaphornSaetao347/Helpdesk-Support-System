@@ -89,9 +89,9 @@
           "options": {
             "polyfills": [
               "zone.js",
-              "zone.js/testing",
-              "@angular/localize/init"
+              "zone.js/testing"
             ],
+            "karmaConfig": "./karma.conf.js",
             "tsConfig": "tsconfig.spec.json",
             "assets": [
               "src/favicon.ico",

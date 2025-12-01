@@ -125,7 +125,6 @@
                                 <span class="text-muted">กำลังโหลดตัวเลือก...</span>
                             </div>
 
-                            <!-- ✅ แสดงเป็นกล่องข้อความ readonly ถ้าไม่มีสิทธิ์ -->
                             <div *ngIf="priorityError && !isLoadingPriorities" class="form-control readonly-box">
                                 {{ getPriorityName(supporterForm.get('priority')?.value) || '-' }}
                             </div>
@@ -282,17 +281,19 @@
             <div class="form-section">
                 <div class="form-group">
                     <label class="required">Issue Resolution</label>
-                    <fieldset class="text-editor"
-                        [disabled]="!isFormReady() || supporterFormState.isSaving || !isSupporter">
+
+                    <div class="rich-text-editor-container" 
+                        [class.invalid]="hasFieldError('fix_issue_description')"
+                        [class.disabled]="!isFormReady() || supporterFormState.isSaving || !isSupporter">
+                        
                         <div class="editor-toolbar">
-                            <div class="toolbar-group">
-                                <select class="toolbar-select" [disabled]="!isFormReady() || !isSupporter">
+                            <div class="toolbar-section">
+                                <select class="font-select width-172" [disabled]="!isFormReady() || !isSupporter">
                                     <option>Noto Sans Thai</option>
                                     <option>Arial</option>
                                     <option>Times New Roman</option>
                                 </select>
-
-                                <select class="toolbar-select" [disabled]="!isFormReady() || !isSupporter">
+                                <select class="size-select width-171" [disabled]="!isFormReady() || !isSupporter">
                                     <option>14</option>
                                     <option>12</option>
                                     <option>16</option>
@@ -302,46 +303,86 @@
 
                             <div class="toolbar-separator"></div>
 
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" title="Bold"
+                            <div class="toolbar-section">
+                                <button type="button" class="toolbar-btn" (click)="richImgInput.click()" title="Upload Image"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    <strong>B</strong>
+                                    <i class="bi bi-image"></i>
                                 </button>
-                                <div class="toolbar-separator"></div>
-                                <button type="button" class="toolbar-btn" title="Italic"
+                                <input type="file" #richImgInput style="display: none" (change)="onRichTextConfigImage($event)" accept="image/*">
+                            </div>
+
+                            <div class="toolbar-separator"></div>
+
+                            <div class="toolbar-section">
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.bold" (click)="formatText('bold')" title="Bold"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    <em>I</em>
+                                    <i class="bi bi-type-bold"></i>
                                 </button>
-                                <div class="toolbar-separator"></div>
-                                <button type="button" class="toolbar-btn" title="Underline"
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.italic" (click)="formatText('italic')" title="Italic"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    <u>U</u>
+                                    <i class="bi bi-type-italic"></i>
                                 </button>
-                                <div class="toolbar-separator"></div>
-                                <button type="button" class="toolbar-btn active" title="Align Left"
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.underline" (click)="formatText('underline')" title="Underline"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    ≡
+                                    <i class="bi bi-type-underline"></i>
                                 </button>
-                                <div class="toolbar-separator"></div>
-                                <button type="button" class="toolbar-btn" title="Align Center"
+                            </div>
+
+                            <div class="toolbar-separator"></div>
+
+                            <div class="toolbar-section">
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyLeft" (click)="formatText('justifyLeft')" title="Align Left"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    ≡
+                                    <i class="bi bi-text-left"></i>
                                 </button>
-                                <div class="toolbar-separator"></div>
-                                <button type="button" class="toolbar-btn" title="Align Right"
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyCenter" (click)="formatText('justifyCenter')" title="Align Center"
                                     [disabled]="!isFormReady() || !isSupporter">
-                                    ≡
+                                    <i class="bi bi-text-center"></i>
+                                </button>
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyRight" (click)="formatText('justifyRight')" title="Align Right"
+                                    [disabled]="!isFormReady() || !isSupporter">
+                                    <i class="bi bi-text-right"></i>
+                                </button>
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.justifyFull" (click)="formatText('justifyFull')" title="Justify"
+                                    [disabled]="!isFormReady() || !isSupporter">
+                                    <i class="bi bi-justify"></i>
+                                </button>
+                            </div>
+
+                            <div class="toolbar-separator"></div>
+
+                            <div class="toolbar-section">
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.insertUnorderedList" (click)="insertList(false)" title="Bullet List"
+                                    [disabled]="!isFormReady() || !isSupporter">
+                                    <i class="bi bi-list-ul"></i>
+                                </button>
+
+                                <button type="button" class="toolbar-btn" [class.active]="toolbarState.insertOrderedList" (click)="insertList(true)" title="Numbered List"
+                                    [disabled]="!isFormReady() || !isSupporter">
+                                    <i class="bi bi-list-ol"></i>
+                                </button>
+                            </div>
+
+                            <div class="toolbar-separator"></div>
+
+                            <div class="toolbar-section">
+                                <button type="button" class="toolbar-btn" (click)="insertLink()" title="Insert Link"
+                                    [disabled]="!isFormReady() || !isSupporter">
+                                    <i class="bi bi-link-45deg"></i>
                                 </button>
                             </div>
                         </div>
-
-                        <textarea class="editor-content" formControlName="fix_issue_description"
-                            [class.is-invalid]="hasFieldError('fix_issue_description')"
-                            placeholder="อธิบายการแก้ไขปัญหา วิธีการดำเนินการ และผลลัพธ์ที่ได้..." maxlength="5000"
-                            rows="6"
-                            [disabled]="!isFormReady() || supporterFormState.isSaving || !isSupporter || !isSupporter">
-                        </textarea>
-
+                        <div class="rich-editor" 
+                            #fixIssueEditor
+                            [class.invalid]="hasFieldError('fix_issue_description')"
+                            contenteditable="true" 
+                            (input)="onDescriptionInput($event)"
+                            (click)="onEditorEvent()"
+                            (keyup)="onEditorEvent()"
+                            (mouseup)="onEditorEvent()"
+                            [attr.placeholder]="'อธิบายการแก้ไขปัญหา วิธีการดำเนินการ และผลลัพธ์ที่ได้...'"
+                            [attr.disabled]="!isFormReady() || supporterFormState.isSaving || !isSupporter ? true : null">
+                        </div>
                         <div class="editor-footer p-2 bg-light d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 <i class="bi bi-info-circle me-1"></i>
@@ -355,7 +396,7 @@
                         <div *ngIf="hasFieldError('fix_issue_description')" class="invalid-feedback">
                             {{ getFieldError('fix_issue_description') }}
                         </div>
-                    </fieldset>
+                    </div>
                 </div>
             </div>
 

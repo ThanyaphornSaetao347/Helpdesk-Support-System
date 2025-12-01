@@ -189,94 +189,170 @@
   height: 64px;
 }
 
-/* ===== TEXT EDITOR ===== */
+/* ===== ✅ NEW: RICH TEXT EDITOR STYLES (รวมจาก ticket-create) ===== */
 
-.text-editor {
+/* 1. Container */
+.rich-text-editor-container {
+  box-sizing: border-box;
+  width: 100%;
   border: 1px solid #D1D5DB;
-  border-radius: 8px;
-  overflow: hidden;
+  border-radius: 8px; 
   background: #FFFFFF;
+  transition: all 0.2s ease;
 }
 
+.rich-text-editor-container.invalid {
+  border-color: #DC3545 !important;
+}
+
+.rich-text-editor-container.disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background-color: #F3F4F6 !important;
+  pointer-events: all !important; /* อนุญาตให้แสดง cursor */
+}
+
+.rich-text-editor-container.disabled * {
+  cursor: not-allowed !important;
+  pointer-events: none !important; /* ป้องกันการคลิก */
+}
+
+/* 2. Toolbar */
 .editor-toolbar {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #D1D5DB;  /* ✅ ใช้สีเส้นขอบเดียวกับ form controls */
-  background: #FFFFFF;  /* ✅ เปลี่ยนจาก #F9FAFB เป็นสีขาวเหมือน form อื่นๆ */
-  gap: 8px;
-}
-
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-select {
-  width: 140px;
-  height: 32px;
-  padding: 4px 8px;
-  border: 1px solid #D1D5DB;
-  border-radius: 4px;
+  gap: 8px; 
+  width: 100%;
+  height: 48px; 
+  padding: 0 12px;
+  border-bottom: 1px solid #D1D5DB;
   background: #FFFFFF;
+  border-radius: 8px 8px 0 0;
+  flex-wrap: wrap; /* NEW: เพิ่ม wrap สำหรับ responsive */
+  box-sizing: border-box;
+}
+
+.toolbar-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px; 
+}
+
+.font-select,
+.size-select {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 10px;
+  width: 150px;
+  height: 32px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px; 
   font-family: 'Noto Sans Thai', sans-serif;
+  font-weight: 400;
   font-size: 13px;
+  line-height: 100%;
   color: #374151;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='%23374151' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
   padding-right: 28px;
-}
-
-.toolbar-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid #D1D5DB;
-  background: #FFFFFF;
-  border-radius: 4px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #374151;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s ease;
 }
 
-.toolbar-btn:hover {
-  background: #F3F4F6;
-  border-color: #9CA3AF;
-}
-
-.toolbar-btn.active {
-  background: #EBF8FF;
-  border-color: #3B82F6;
-  color: #1E40AF;
+.size-select {
+  width: 80px;
 }
 
 .toolbar-separator {
   width: 1px;
-  height: 20px;
-  background: #D1D5DB;  /* ✅ ใช้สีเดียวกับเส้นขอบ form controls */
+  height: 24px; /* ปรับให้สูงขึ้น */
+  background: #D1D5DB;
   margin: 0 4px;
 }
 
-.editor-content {
-  min-height: 120px;
-  padding: 12px;
+.toolbar-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px; 
+  height: 28px;
+  background: none;
+  border: 1px solid transparent; 
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #737373;
+  /* color: #5873F8; ใช้สีหลักของระบบ */
+}
+
+.toolbar-btn:hover {
+  background-color: #F3F4F6;
+  border-color: #E5E7EB;
+  color: #3B82F6;
+}
+
+.toolbar-btn.active {
+  background: #5873F8;
+  border-color: #5873F8;
+  color: #FFFFFF;
+}
+
+.toolbar-btn i {
+  font-size: 14px;
+}
+
+/* 3. Editor Content (DIV contenteditable) */
+.rich-editor {
+  /* ⚠️ NOTE: เปลี่ยนจาก .editor-content เป็น .rich-editor (เหมือนใน ticket-create) */
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px; 
   border: none;
-  resize: vertical;
+  padding: 12px;
+  background-color: #ffffff;
   font-family: 'Noto Sans Thai', sans-serif;
   font-size: 14px;
-  line-height: 1.5;
-  width: 100%;
-  outline: none;
-  background: #FFFFFF;
   color: #374151;
+  outline: none;
+  overflow-y: auto;
+  line-height: 1.5;
+  resize: vertical; 
 }
+
+/* Placeholder for rich-editor (DIV) */
+.rich-editor:empty:not(:focus)::before {
+  content: attr(placeholder);
+  color: #9CA3AF;
+  pointer-events: none;
+  display: block;
+}
+
+/* ⚠️ NOTE: ลบ .editor-content style เก่าออก */
+
+/* 4. Editor Footer (เดิม) */
+.editor-footer {
+  border-top: 1px solid #E5E7EB; 
+  border-radius: 0 0 8px 8px;
+}
+
+/* ===== ⚠️ DEPRECATED/OLD STYLES (ลบออกหรือแทนที่) ===== */
+
+/* ⚠️ ลบ .text-editor ที่เคยใช้กับ fieldset ออก และใช้ .rich-text-editor-container แทน */
+/* .text-editor { */
+  /* DEPRECATED - ใช้ .rich-text-editor-container แทน */
+  /* border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #FFFFFF; */
+/* } */
+
 
 /* ===== ATTACHMENTS SECTION ===== */
 
@@ -599,8 +675,7 @@ app-file-list .remove-attachment-btn:hover {
 .form-control:disabled,
 .form-select[disabled],
 .form-select:disabled,
-.editor-content[disabled],
-.editor-content:disabled,
+/* ⚠️ ลบ .editor-content[disabled] ออก เพราะใช้ .rich-editor แทน */
 .toolbar-btn[disabled],
 .toolbar-btn:disabled,
 .toolbar-select[disabled],
@@ -626,7 +701,8 @@ button:disabled {
 /* ✅ เพิ่ม: สำหรับ label ของ field ที่ disabled */
 .form-group:has(input:disabled) label,
 .form-group:has(select:disabled) label,
-.form-group:has(textarea:disabled) label {
+/* ⚠️ ใช้ .rich-text-editor-container.disabled แทน */
+.form-group:has(.rich-text-editor-container.disabled) label {
   opacity: 0.6;
 }
 
@@ -666,31 +742,6 @@ button:disabled {
 
 .attachment-container.disabled-upload * {
   cursor: not-allowed !important;
-}
-
-/* 3. ✅ NEW: Fade the ENTIRE Issue Resolution fieldset */
-/* ทำให้ fieldset ทั้งก้อนทึบและเป็นเครื่องหมายห้าม */
-fieldset.form-section[disabled] {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-  background-color: #F3F4F6 !important; /* ✅ เพิ่ม: สีเทาอ่อนเหมือน disabled อื่นๆ */
-  /* ใช้ pointer-events เพื่อหยุดการคลิกบน label หรือพื้นที่ว่าง */
-  pointer-events: none !important; 
-}
-
-/* ✅ เพิ่ม: สำหรับ text-editor (Issue Resolution) */
-fieldset.text-editor[disabled],
-fieldset.text-editor:disabled {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-  background-color: #F3F4F6 !important; /* ✅ เพิ่ม: สีเทาอ่อนเหมือน disabled อื่นๆ */
-  pointer-events: all !important; /* อนุญาตให้แสดง cursor */
-}
-
-fieldset.text-editor[disabled] *,
-fieldset.text-editor:disabled * {
-  cursor: not-allowed !important;
-  pointer-events: none !important; /* ป้องกันการคลิก */
 }
 
 /* 4. ทำให้ปุ่มลบไฟล์ (ของเก่า) หายไปเมื่อ disabled */
@@ -844,11 +895,28 @@ select[disabled] {
     width: 100%;
   }
   
-  .toolbar-select {
+  /* Responsive for rich editor */
+  .editor-toolbar {
+    height: auto;
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .toolbar-section {
+    gap: 6px;
+  }
+  
+  .font-select,
+  .size-select {
     width: 120px;
     font-size: 12px;
   }
   
+  .rich-editor {
+    min-height: 80px;
+  }
+
+  /* Responsive for attachment */
   .attachment-container {
     padding: 12px;
     gap: 12px;
@@ -900,13 +968,28 @@ select[disabled] {
   
   .editor-toolbar {
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
   }
   
-  .toolbar-select {
+  .toolbar-section {
+    gap: 4px;
+  }
+  
+  .font-select,
+  .size-select {
     width: 100px;
   }
   
+  .toolbar-separator {
+    height: 20px;
+  }
+  
+  .rich-editor {
+    min-height: 60px;
+    padding: 10px;
+  }
+
+  /* Responsive for attachment */
   .attachment-container {
     padding: 8px;
     gap: 8px;
