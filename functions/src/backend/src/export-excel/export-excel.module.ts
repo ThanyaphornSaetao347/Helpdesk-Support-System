@@ -3,7 +3,7 @@ import { ExportExcelService } from './export-excel.service';
 import { ExportExcelController } from './export-excel.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Ticket } from '../ticket/entities/ticket.entity';
-import { PermissionModule } from 'src/permission/permission.module';
+import { PermissionModule } from '../permission/permission.module';
 
 @Module({
   imports: [
