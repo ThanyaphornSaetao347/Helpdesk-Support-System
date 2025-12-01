@@ -6,7 +6,7 @@ import { CustomerForProject } from './entities/customer-for-project.entity';
 import { Project } from '../project/entities/project.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { PermissionModule } from '../permission/permission.module';
-import { UserModule } from 'src/users/users.module';
+import { UserModule } from '../users/users.module';
 import { Users } from '../users/entities/user.entity';
 
 @Module({
