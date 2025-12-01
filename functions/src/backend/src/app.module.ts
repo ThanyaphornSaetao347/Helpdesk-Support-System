@@ -50,31 +50,10 @@ import { TicketPriorityModule } from './ticket_priority/ticket_priority.module';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST,
-      port: 5432,
-      username: 'postgres',
-      password: 'thanya7746',
-      database: 'db_support_ticket',
-      entities: [
-        Users, 
-        Project, 
-        CustomerForProject, 
-        Customer,
-        TicketCategoryLanguage,
-        TicketCategory,
-        Ticket,
-        TicketAttachment,
-        TicketStatusHistory,
-        TicketStatus,
-        TicketStatusLanguage,
-        MasterRole,
-        UserAllowRole,
-        TicketAssigned,
-        Satisfaction,
-        Notification
-      ],
+      url: process.env.DATABASE_URL,   // ⬅ ดึง URL จาก .env
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: false,              // ป้องกัน schema พังขณะ import
+      ssl: { rejectUnauthorized: false },  // ⬅ จำเป็นสำหรับ Neon Cloud
     }),
     AuthModule,
     UserModule,
