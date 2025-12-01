@@ -89,7 +89,7 @@ export class AppModule {
    configure(consumer: MiddlewareConsumer) {
     consumer
       .apply((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
+        res.header('Access-Control-Allow-Origin', 'https://helpdesk-support-44934.web.app');
         res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Accept');
         next();
